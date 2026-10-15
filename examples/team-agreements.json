@@ -1,0 +1,98 @@
+{
+  "id": "team-agreements-2027",
+  "title": "Team Agreements Round",
+  "languages": ["it", "en"],
+  "content": {
+    "it": {
+      "heading": "Accordi di lavoro del team",
+      "lede": "{n} proposte su come lavoriamo insieme, ognuna con una risposta consigliata. Dicci se sei d’accordo, o cosa cambieresti.",
+      "purpose": "Scrivere gli accordi del team prima della pianificazione di gennaio.",
+      "from": "Il team lead",
+      "to": "Tutte le persone del team",
+      "how": "Ci vogliono circa cinque minuti in tutto."
+    },
+    "en": {
+      "heading": "Team working agreements",
+      "lede": "{n} proposals on how we work together, each with a recommended answer. Tell us whether you agree, or what you'd change.",
+      "purpose": "Write down the team's agreements before January planning.",
+      "from": "The team lead",
+      "to": "Everyone on the team",
+      "how": "It takes about five minutes in all."
+    }
+  },
+  "groups": [
+    {"key": "meetings", "label": {"it": "Riunioni", "en": "Meetings"}},
+    {"key": "code", "label": {"it": "Lavoro sul codice", "en": "Working on code"}},
+    {"key": "team", "label": {"it": "Il team", "en": "The team"}}
+  ],
+  "questions": [
+    {
+      "id": "Q1", "group": "meetings", "kind": "decision",
+      "it": {
+        "title": "Mattine senza riunioni",
+        "body": "Oggi quattro riunioni ricorrenti su dieci cadono tra le 9 e le 12, quando la maggior parte di noi lavora meglio da sola.",
+        "rec": "Niente riunioni ricorrenti prima delle 12, dal martedì al giovedì. Le urgenze restano possibili."
+      },
+      "en": {
+        "title": "Meeting-free mornings",
+        "body": "Four of our ten recurring meetings fall between 9 and 12, when most of us do our best focused work.",
+        "rec": "No recurring meetings before noon, Tuesday to Thursday. Urgent ones are still fine."
+      }
+    },
+    {
+      "id": "Q2", "group": "meetings", "kind": "decision",
+      "it": {
+        "title": "Standup scritto",
+        "body": "Lo standup quotidiano dura in media 20 minuti per nove persone, e chi è in un altro fuso orario lo perde spesso.",
+        "rec": "Un aggiornamento scritto entro le 10 nel canale del team, e una chiamata breve solo il lunedì."
+      },
+      "en": {
+        "title": "Written standup",
+        "body": "The daily standup takes 20 minutes on average for nine people, and anyone in another time zone often misses it.",
+        "rec": "A written update in the team channel by 10:00, and a short call on Mondays only."
+      }
+    },
+    {
+      "id": "Q3", "group": "code", "kind": "choice",
+      "options": [
+        {"key": "same-day", "label": {"it": "Entro 4 ore lavorative", "en": "Within 4 working hours"}},
+        {"key": "next-day", "label": {"it": "Entro la fine del giorno lavorativo successivo", "en": "By the end of the next working day"}, "short": {"it": "Giorno successivo", "en": "Next day"}},
+        {"key": "none", "label": {"it": "Nessun tempo fisso", "en": "No fixed target"}, "needsNote": true}
+      ],
+      "it": {
+        "title": "Quanto può aspettare una code review?",
+        "body": "Il mese scorso una pull request ha aspettato in media un giorno e mezzo la prima review.",
+        "rec": "Entro la fine del giorno lavorativo successivo: realistico anche con i fusi orari."
+      },
+      "en": {
+        "title": "How long can a code review wait?",
+        "body": "Last month a pull request waited a day and a half, on average, for its first review.",
+        "rec": "By the end of the next working day: realistic even across time zones."
+      }
+    },
+    {
+      "id": "Q4", "group": "team", "kind": "decision",
+      "it": {
+        "title": "Retrospettiva ogni due settimane",
+        "body": "Facciamo la retrospettiva una volta al mese, e le cose da migliorare arrivano quando ormai sono vecchie.",
+        "rec": "Ogni due settimane, 45 minuti, con una sola azione concordata da verificare la volta dopo."
+      },
+      "en": {
+        "title": "A retrospective every two weeks",
+        "body": "We hold a retrospective once a month, and by then the things to improve are old news.",
+        "rec": "Every two weeks, 45 minutes, with one agreed action to check the next time."
+      }
+    },
+    {
+      "id": "Q5", "group": "team", "kind": "open",
+      "it": {
+        "title": "Un accordo che manca",
+        "body": "Qualcosa che ti farebbe lavorare meglio con gli altri e che nessuno ha ancora proposto."
+      },
+      "en": {
+        "title": "One agreement we're missing",
+        "body": "Something that would help you work better with the others, and that nobody has proposed yet."
+      }
+    }
+  ]
+}

@@ -1,0 +1,890 @@
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one reading column of white question sheets on a grey frame, a question index on the left, a sticky bar with progress and filters. Blue marks only the viewer's next question. */
+:root{
+  --bg:#eef2f6; --sheet:#ffffff; --fg:#0f172a; --muted:#475569; --faint:#64748b; --line:#e2e8f0;
+  --accent:#2563eb; --on-accent:#ffffff; --accent-soft:#eff6ff; --pick-bg:#0f172a; --pick-fg:#f8fafc; --rec-bg:#f8fafc;
+  --ok:#166534; --ok-bg:#dcfce7; --warn:#92400e; --warn-bg:#fef3c7; --bad:#991b1b; --bad-bg:#fee2e2;
+  --shadow:0 2px 10px rgba(15,23,42,.14);
+  --font:Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --mono:ui-monospace, "SF Mono", Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1120; --sheet:#111827; --fg:#e5e7eb; --muted:#a3adbb; --faint:#8b97a8; --line:#243041;
+  --accent:#60a5fa; --on-accent:#0b1120; --accent-soft:#172554; --pick-bg:#e5e7eb; --pick-fg:#0b1120; --rec-bg:#0f172a;
+  --ok:#86efac; --ok-bg:#052e16; --warn:#fcd34d; --warn-bg:#3b2a07; --bad:#fca5a5; --bad-bg:#3b0d0d;
+  --shadow:0 2px 12px rgba(0,0,0,.55); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1120; --sheet:#111827; --fg:#e5e7eb; --muted:#a3adbb; --faint:#8b97a8; --line:#243041;
+  --accent:#60a5fa; --on-accent:#0b1120; --accent-soft:#172554; --pick-bg:#e5e7eb; --pick-fg:#0b1120; --rec-bg:#0f172a;
+  --ok:#86efac; --ok-bg:#052e16; --warn:#fcd34d; --warn-bg:#3b2a07; --bad:#fca5a5; --bad-bg:#3b0d0d;
+  --shadow:0 2px 12px rgba(0,0,0,.55); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.55;margin:0}
+.wrap{max-width:780px;margin:0 auto;padding-inline:16px;padding-block:16px 176px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.25}
+h1{font-size:28px;font-weight:700;letter-spacing:-0.01em}
+h2{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding-top:14px}
+h3{font-size:18px;font-weight:600}
+h3.sub{font-size:15px}
+h3[tabindex]:focus:not(:focus-visible){outline:none}
+p{margin:0}
+a{color:inherit;text-decoration-color:var(--faint);text-underline-offset:2px}
+.top{display:flex;justify-content:flex-end}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--sheet);padding:2px}
+.lang button{font:inherit;font-size:13px;border:0;background:transparent;color:var(--muted);border-radius:999px;padding:4px 12px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--pick-bg);color:var(--pick-fg)}
+.sheet{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.intro{gap:14px}
+.meta{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;font-size:14px}
+.meta dt{color:var(--faint)}
+.meta dd{margin:0}
+.lede{color:var(--muted);max-width:65ch}
+.small{font-size:13px;color:var(--faint)}
+.banner{border-radius:8px;padding:10px 12px;font-size:14px}
+.banner.warn{background:var(--warn-bg);color:var(--warn)}
+.banner.info{background:var(--accent-soft);color:var(--fg)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);padding-block:10px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.who{display:flex;align-items:center;gap:8px;font-size:14px;min-width:0}
+.who img{width:24px;height:24px;border-radius:50%;flex:none}
+.who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.progress{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.chipbtn,.editbtn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--sheet);color:var(--fg);border-radius:999px;padding:4px 11px;cursor:pointer}
+.chipbtn[aria-pressed="true"]{background:var(--pick-bg);color:var(--pick-fg);border-color:var(--pick-bg)}
+.chipbtn:focus-visible,.opt input:focus-visible+span,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* A question card folds to its header and a one-line summary once the viewer has answered it. */
+.card,#extra{scroll-margin-top:calc(var(--bar-h,56px) + env(safe-area-inset-top,0px) + 12px)}
+.card.collapsed{gap:6px}
+.fold{display:grid;grid-template-rows:1fr;min-width:0}
+.fold-in{min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:12px}
+.card.collapsed .fold{grid-template-rows:0fr;opacity:0}
+.anim .card{transition:gap .26s ease}
+.anim .fold{transition:grid-template-rows .26s ease,opacity .2s ease}
+.sum{display:flex;align-items:center;gap:10px;min-width:0;font-size:14px;color:var(--muted)}
+.sum-text{display:flex;gap:6px;flex:1;min-width:0;overflow:hidden;white-space:nowrap}
+.sum-pick{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--fg)}
+.sum-note{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sum-team{flex:none;color:var(--faint)}
+.editbtn{flex:none}
+.foot{display:flex;justify-content:flex-end}
+.qhead{display:flex;gap:10px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
+.qtitle{display:flex;flex-direction:column;gap:2px;min-width:0}
+.qnum{font-family:var(--mono);font-size:13px;color:var(--faint);font-variant-numeric:tabular-nums}
+.tag{font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.tag.next{background:var(--accent);color:var(--on-accent)}
+.tag.done{color:var(--faint);border:1px solid var(--line);font-weight:500}
+.body{color:var(--fg);max-width:68ch;white-space:pre-line}
+.rec{background:var(--rec-bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.rec b{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;min-width:0}
+legend{font-size:13px;color:var(--faint);padding:0;margin-bottom:8px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.opt span{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14px;background:var(--sheet);cursor:pointer}
+.opt input:checked+span{background:var(--pick-bg);color:var(--pick-fg);border-color:var(--pick-bg)}
+textarea{font:inherit;font-size:14px;color:var(--fg);background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-height:64px;resize:vertical}
+textarea.need{border-color:var(--warn)}
+.status{font-size:13px;color:var(--faint);min-height:1.2em}
+.status.bad{color:var(--bad)}
+.others{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.others .none{font-size:13px;color:var(--faint)}
+.ans{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:14px}
+.ans img{width:22px;height:22px;border-radius:50%}
+.ans .who2{font-weight:600}
+.ans .pk{font-size:12px;border-radius:999px;padding:0 8px;margin-left:6px;white-space:nowrap}
+.pk.yes{background:var(--ok-bg);color:var(--ok)}
+.pk.other{background:var(--warn-bg);color:var(--warn)}
+.pk.unsure{border:1px solid var(--line);color:var(--faint)}
+.pk.opt{border:1px solid var(--line);color:var(--fg)}
+.ans .note{color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.people{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:13px;color:var(--muted)}
+.people span{display:inline-flex;align-items:center;gap:5px}
+.people img{width:18px;height:18px;border-radius:50%}
+.btn{font:inherit;font-size:14px;font-weight:600;border:1px solid var(--line);background:var(--sheet);color:var(--fg);border-radius:8px;padding:8px 14px;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:default}
+.copyout{font-family:var(--mono);font-size:12px;min-height:160px}
+/* Floating navigation: index (narrow screens), top, next unanswered, last. */
+.fab{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:column;gap:8px}
+.fab button{width:44px;height:44px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--sheet);color:var(--fg);display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow)}
+.fab button.primary{background:var(--pick-bg);color:var(--pick-fg);border-color:var(--pick-bg)}
+.fab svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media (hover:hover){.fab button:not(.primary):hover{border-color:var(--faint)}}
+/* Question index: a sticky sheet on the left on wide screens, a drawer from the list button on narrow ones. */
+.toc{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:0 8px 12px;overflow-y:auto;overscroll-behavior:contain;font-size:13px}
+.toc-head{position:sticky;top:0;z-index:1;background:var(--sheet);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 8px 6px}
+.toc-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+.toc-title h2{padding:0;color:var(--fg)}
+.toc-count{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+.toc-close{display:none}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc-group{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding:12px 8px 4px}
+.toc a{display:grid;grid-template-columns:16px auto minmax(0,1fr);gap:6px;align-items:start;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none;line-height:1.35}
+.toc a[aria-current="true"]{background:var(--bg);font-weight:600}
+.toc a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+@media (hover:hover){.toc a:hover{background:var(--bg)}}
+.toc .tid{font-family:var(--mono);font-size:12px;font-weight:400;color:var(--faint);padding-top:1px;min-width:2.4em}
+.mark{width:16px;height:16px;margin-top:1px;border-radius:50%;border:1.5px solid var(--faint);display:grid;place-items:center;color:transparent}
+.mark svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.mark.done{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.mark.part{background:var(--warn-bg);border-color:var(--warn)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.scrim{position:fixed;inset:0;z-index:7;background:rgba(15,23,42,.45)}
+@media (max-width:979.98px){
+  .toc{position:fixed;inset:0 auto 0 0;z-index:8;width:min(320px,88vw);border-radius:0;border-width:0 1px 0 0;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));padding-left:calc(8px + env(safe-area-inset-left,0px));box-shadow:var(--shadow);transform:translateX(-100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s}
+  .toc.open{transform:none;visibility:visible;transition:transform .25s ease}
+  .toc-head{padding-top:calc(14px + env(safe-area-inset-top,0px))}
+  .toc-close{display:grid;place-items:center;flex:none;width:36px;height:36px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--sheet);color:var(--fg);cursor:pointer}
+  .toc-close svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+}
+@media (min-width:980px){
+  .page{display:grid;grid-template-columns:248px minmax(0,780px);column-gap:28px;justify-content:center;padding-inline:16px}
+  .page>.wrap{max-width:none;margin:0;padding-inline:0}
+  .toc{position:sticky;top:16px;align-self:start;max-height:calc(100vh - 32px);margin-top:16px}
+  .fab .fab-toc,.scrim{display:none}
+}
+@keyframes flash{0%{box-shadow:0 0 0 0 transparent}25%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 3px transparent}}
+.flash{animation:flash 1.4s ease-out .25s}
+[hidden]{display:none!important}
+@media (max-width:520px){.sheet{padding:16px}.meta{grid-template-columns:minmax(0,1fr)}.meta dt{margin-top:6px}h1{font-size:24px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}.anim .card,.anim .fold,.toc,.toc.open{transition:none}.flash{animation:none}}
+</style>
+
+<div class="page">
+<nav class="toc" id="toc" aria-labelledby="toc-h">
+  <div class="toc-head">
+    <div class="toc-title"><h2 id="toc-h" data-i18n="tocTitle"></h2><span class="toc-count" id="toc-count"></span></div>
+    <button type="button" class="toc-close" id="toc-close" data-i18n-aria="tocClose"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <ol id="toc-list"></ol>
+</nav>
+
+<div class="wrap">
+  <div class="top" id="top"><div class="lang" role="group" id="lang"></div></div>
+
+  <header class="sheet intro">
+    <h1 id="h1"></h1>
+    <p class="lede" id="lede"></p>
+    <dl class="meta" id="meta"></dl>
+    <h3 class="sub" id="context-h" data-i18n="contextH"></h3>
+    <p class="lede" id="context"></p>
+    <h3 class="sub" data-i18n="howH"></h3>
+    <p class="lede" id="how"></p>
+    <div id="banner" class="banner info"></div>
+  </header>
+
+  <div class="bar" role="region" id="bar">
+    <div class="who" id="who"></div>
+    <div class="progress" id="progress" aria-live="polite"></div>
+    <div class="filters" role="group" id="filters">
+      <button class="chipbtn" type="button" data-f="all" aria-pressed="true" data-i18n="fAll"></button>
+      <button class="chipbtn" type="button" data-f="mine" aria-pressed="false" data-i18n="fMine"></button>
+      <button class="chipbtn" type="button" data-f="open" aria-pressed="false" data-i18n="fOpen"></button>
+    </div>
+  </div>
+  <div class="people" id="people"></div>
+
+  <main id="qs" style="display:flex;flex-direction:column;gap:14px"></main>
+
+  <section class="sheet" id="extra">
+    <h3 tabindex="-1" data-i18n="extraH"></h3>
+    <p class="body" data-i18n="extraP"></p>
+    <label class="small" for="extra-note" data-i18n="extraL"></label>
+    <textarea id="extra-note" data-i18n-ph="extraPh"></textarea>
+    <div class="status" id="extra-status"></div>
+    <div class="others" id="extra-others"></div>
+  </section>
+
+  <section class="sheet">
+    <h3 data-i18n="copyH"></h3>
+    <p class="body" data-i18n="copyP"></p>
+    <div><button class="btn" type="button" id="copy" data-i18n="copyB"></button> <span class="status" id="copy-status"></span></div>
+    <textarea class="copyout" id="copyout" readonly hidden></textarea>
+  </section>
+</div>
+</div>
+<div class="scrim" id="scrim" hidden></div>
+
+<nav class="fab" id="fab">
+  <button type="button" data-go="toc" data-i18n-aria="tocOpen" class="fab-toc" aria-controls="toc" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></button>
+  <button type="button" data-go="top" data-i18n-aria="fabTop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14M12 20V9M6 14l6-6 6 6"/></svg></button>
+  <button type="button" data-go="next" data-i18n-aria="fabNext" class="primary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+  <button type="button" data-go="last" data-i18n-aria="fabLast"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M6 10l6 6 6-6M5 20h14"/></svg></button>
+</nav>
+
+<script>
+// The questionnaire's own content. build.py fills it in; extract_config.py reads it back out of a published page.
+const CONFIG = /*CONFIG-START*/null/*CONFIG-END*/;
+
+// The page's own words, per language. A config can override any key, or add a language, under `ui`.
+const UI = /*UI-START*/{
+"it": {
+  "langName": "Italiano",
+  "langAria": "Lingua", "barAria": "Avanzamento e filtri", "filtersAria": "Mostra", "peopleAria": "Chi ha risposto", "copyAria": "Tutte le risposte come testo",
+  "purposeL": "Scopo", "fromL": "Da", "toL": "A", "usedL": "Le tue risposte",
+  "usedDefault": "Ogni risposta si salva con il tuo nome, e chiunque abbia questa pagina la vede.",
+  "contextH": "Contesto", "howH": "Come rispondere",
+  "how1": "Rispondi alle domande che conosci e lascia le altre a un collega. Anche «Non so» è una risposta utile, e un commento aiuta.",
+  "howDecision": "Quando c’è una risposta consigliata, «Sì, come consigliato» la accetta e «Una risposta diversa» chiede una riga con l’alternativa.",
+  "howOpen": "Alle domande aperte rispondi scrivendo, poi passa oltre con «Chiudi e vai alla prossima».",
+  "howFlow": "Quando scegli una risposta, la domanda si chiude e la pagina passa alla prossima senza risposta; «Modifica» la riapre, anche per aggiungere un commento. Le risposte si salvano mentre scrivi e puoi cambiarle quando vuoi.",
+  "howNav": "I pulsanti in basso a destra portano all’inizio, alla prossima domanda senza risposta e all’ultima. L’elenco delle domande a sinistra (sugli schermi stretti, dal pulsante con le righe) segna con una spunta quelle a cui hai risposto: toccane una per andarci.",
+  "fAll": "Tutte", "fMine": "Non risposte da me", "fOpen": "Non risposte da nessuno",
+  "progress": "Tu: {m} di {n} · Con almeno una risposta: {a} di {n}", "answeredSoFar": "Hanno risposto:",
+  "tagNext": "Prossima per te", "tagDone": "Risposta data", "rec": "Consigliata", "legend": "La tua risposta",
+  "pick_yes": "Sì, come consigliato", "pick_other": "Una risposta diversa", "pick_unsure": "Non so",
+  "short_yes": "sì", "short_other": "diversa", "short_unsure": "non so", "short_note": "commento",
+  "noteL": "Commento (facoltativo)", "noteNeed": "La tua risposta (obbligatoria se è diversa)", "noteNeedChoice": "Spiega la tua scelta (obbligatorio)", "noteAnswer": "La tua risposta",
+  "notePh": "Perché, o cosa invece", "notePhOpen": "Scrivi qui la tua risposta",
+  "edit": "Modifica", "doneNext": "Chiudi e vai alla prossima", "sumYou": "La tua risposta: {pick}", "sumTeam": "{n} dal team",
+  "fabAria": "Spostati nella pagina", "fabTop": "Torna all’inizio", "fabNext": "Prossima domanda senza risposta", "fabLast": "Ultima domanda",
+  "tocTitle": "Domande", "tocCount": "Hai risposto a {m} di {n}", "tocOpen": "Elenco delle domande", "tocClose": "Chiudi l’elenco",
+  "mEmpty": "senza risposta", "mPart": "manca il testo della risposta", "mDone": "risposta data",
+  "none": "Nessun altro ha ancora risposto.", "teamAnswers": "Risposte del team",
+  "extraH": "Altro?", "extraP": "Qualcosa che non abbiamo chiesto e che dovremmo sapere, o una domanda che secondo te è posta male.", "extraL": "La tua nota", "extraPh": "Facoltativa", "extraNone": "Ancora nessuna nota dagli altri.", "extraTeam": "Note del team",
+  "copyH": "Copia le risposte come testo", "copyP": "Le risposte di tutti, in testo semplice, per una chat o un messaggio. Se le tue risposte non si sono potute salvare qui, è il modo per passarle.", "copyB": "Copia tutte le risposte", "copied": "Copiate", "copyFallback": "Selezionate qui sotto: copiale con la tastiera.",
+  "stSaving": "Salvataggio…", "stSaved": "Salvata", "stLocal": "Tenuta solo in questo browser. Per passarla, copia le risposte come testo in fondo alla pagina.", "stLocalShort": "Tenuta solo in questo browser.", "stQuota": "Lo spazio della pagina è pieno, quindi non è stata salvata. Copia le risposte come testo in fondo.", "stError": "Non salvata: {msg}. Riprovo alla prossima modifica.", "unknownErr": "errore sconosciuto",
+  "bConnecting": "Collegamento alle risposte condivise…",
+  "bNoClaude": "Questa pagina salva le risposte solo quando è aperta su claude.ai. Le tue risposte restano in questo browser: copiale come testo in fondo.",
+  "bNoIdentity": "Le risposte si salvano solo per chi ha fatto l’accesso a claude.ai e ha accesso a questa pagina. Le tue restano in questo browser: copiale come testo in fondo.",
+  "bNoWrite": "Puoi leggere le risposte di tutti, ma il tuo accesso non ti permette di salvare le tue. Chiedi all’owner l’accesso da Contributor, oppure copia le tue risposte come testo in fondo.",
+  "bRejected": "Il tuo accesso a questa pagina ti permette di leggere le risposte ma non di salvare le tue. Chiedi all’owner l’accesso da Contributor, oppure copia le tue risposte come testo in fondo.",
+  "bRevoked": "Questa pagina non raggiunge più le risposte condivise.", "bStopped": "Le risposte condivise non si aggiornano più. Ricarica la pagina per ricollegarti.",
+  "loading": "Caricamento…", "whoAs": "Rispondi come {name}", "whoYou": "te", "whoGuest": "Rispondi come ospite", "whoOut": "Accesso non effettuato",
+  "you": "Tu", "someone": "Qualcuno",
+  "txtHead": "{title}: risposte", "txtNone": "- (ancora nessuna risposta)", "txtExtra": "Altro"
+},
+"en": {
+  "langName": "English",
+  "langAria": "Language", "barAria": "Progress and filters", "filtersAria": "Show", "peopleAria": "Who has answered", "copyAria": "All answers as text",
+  "purposeL": "Purpose", "fromL": "From", "toL": "To", "usedL": "Your answers",
+  "usedDefault": "Each answer is saved under your name, and everyone with this page can see it.",
+  "contextH": "Context", "howH": "How to answer",
+  "how1": "Answer the questions you know about and leave the rest for a colleague. «Not sure» is a useful answer too, and a comment helps.",
+  "howDecision": "When there's a recommended answer, «Yes, as recommended» accepts it and «A different answer» needs a line saying what instead.",
+  "howOpen": "Open questions take a written answer; move on with «Close and go to the next».",
+  "howFlow": "Choosing an answer closes the question and takes you to the next unanswered one; «Edit» opens it again, for example to add a comment. Your answers save as you go, and you can change them at any time.",
+  "howNav": "The buttons at the bottom right go to the top, to the next unanswered question and to the last one. The list of questions on the left (on narrow screens, behind the button with the lines) ticks the ones you've answered; click one to go to it.",
+  "fAll": "All", "fMine": "Not answered by me", "fOpen": "Not answered by anyone",
+  "progress": "You: {m} of {n} · Answered by someone: {a} of {n}", "answeredSoFar": "Answered so far:",
+  "tagNext": "Next for you", "tagDone": "Answered", "rec": "Recommended", "legend": "Your answer",
+  "pick_yes": "Yes, as recommended", "pick_other": "A different answer", "pick_unsure": "Not sure",
+  "short_yes": "yes", "short_other": "different", "short_unsure": "not sure", "short_note": "comment",
+  "noteL": "Comment (optional)", "noteNeed": "Your answer (required for a different answer)", "noteNeedChoice": "Explain your choice (required)", "noteAnswer": "Your answer",
+  "notePh": "Why, or what instead", "notePhOpen": "Write your answer here",
+  "edit": "Edit", "doneNext": "Close and go to the next", "sumYou": "Your answer: {pick}", "sumTeam": "{n} from the team",
+  "fabAria": "Move around the page", "fabTop": "Back to top", "fabNext": "Next unanswered question", "fabLast": "Last question",
+  "tocTitle": "Questions", "tocCount": "You've answered {m} of {n}", "tocOpen": "List of questions", "tocClose": "Close the list",
+  "mEmpty": "not answered", "mPart": "the answer needs its text", "mDone": "answered",
+  "none": "No one else has answered yet.", "teamAnswers": "Answers from the team",
+  "extraH": "Anything else?", "extraP": "Anything we didn't ask that we should know, or a question you think is framed wrong.", "extraL": "Your note", "extraPh": "Optional", "extraNone": "No notes from others yet.", "extraTeam": "Notes from the team",
+  "copyH": "Copy the answers as text", "copyP": "Everyone's answers, as plain text, for a chat or a message. If your answers couldn't be saved here, this is how to pass them on.", "copyB": "Copy all answers", "copied": "Copied", "copyFallback": "Selected below: copy it with your keyboard.",
+  "stSaving": "Saving…", "stSaved": "Saved", "stLocal": "Kept in this browser only. Copy the answers as text at the end of the page to pass them on.", "stLocalShort": "Kept in this browser only.", "stQuota": "The page's storage is full, so this wasn't saved. Copy your answers as text at the end.", "stError": "Not saved: {msg}. It will try again on your next change.", "unknownErr": "unknown error",
+  "bConnecting": "Connecting to the shared answers…",
+  "bNoClaude": "This page saves answers only when it is opened on claude.ai. Your answers here are kept in this browser; copy them as text at the end.",
+  "bNoIdentity": "Answers can be saved only by people signed in to claude.ai with access to this page. Yours are kept in this browser; copy them as text at the end.",
+  "bNoWrite": "You can read everyone's answers, but your access doesn't let you save your own. Ask the owner for Contributor access, or copy your answers as text at the end.",
+  "bRejected": "Your access to this page lets you read the answers but not save your own. Ask the owner for Contributor access, or copy your answers as text at the end.",
+  "bRevoked": "This page can no longer reach the shared answers.", "bStopped": "The shared answers stopped updating. Reload the page to reconnect.",
+  "loading": "Loading…", "whoAs": "Answering as {name}", "whoYou": "you", "whoGuest": "Answering as a guest", "whoOut": "Not signed in",
+  "you": "You", "someone": "Someone",
+  "txtHead": "{title}: answers", "txtNone": "- (no answers yet)", "txtExtra": "Anything else"
+}
+}/*UI-END*/;
+
+const C = CONFIG;
+const LANGS = C.languages && C.languages.length ? C.languages : ["en"];
+const KEY = C.id || "questionnaire";
+const LS_KEY = KEY + ":answers", LANG_KEY = KEY + ":lang";
+const GROUPS = {}; for (const g of C.groups || []) GROUPS[g.key] = g.label;
+// Kinds: "decision" (a recommendation: yes / different / not sure), "choice" (the config's own options), "open" (a written answer).
+const QS = C.questions.map(q => Object.assign({}, q, {kind: q.kind || (q.options ? "choice" : "decision")}));
+const byId = {}; for (const q of QS) byId[q.id] = q;
+
+const S = {
+  lang: LANGS[0],
+  db: null, user: null, myId: null, me: null,
+  canSave: false,
+  responses: {},          // uid -> doc body
+  mine: {answers: {}, extra: null},
+  touched: new Set(), loaded: false,
+  writing: false, dirty: false, retried: false, timer: null,
+  filter: "all", profiles: {},
+  // Messages are kept as keys so a language switch re-renders them.
+  banner: {key: "bConnecting", kind: "info"}, status: null, who: "loading",
+  // Folding is per viewer and never stored: an answered card is folded unless the viewer reopened it.
+  open: new Set(), pending: {}, arrow: false, animOn: false,
+  tocOpen: false, cur: null, spyQueued: false, settle: null
+};
+const WIDE = matchMedia("(min-width: 980px)");
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+function fill(s, vars) { if (vars) for (const [k, v] of Object.entries(vars)) s = s.split("{" + k + "}").join(String(v)); return s; }
+function t(key, vars) {
+  const own = C.ui && C.ui[S.lang] && C.ui[S.lang][key];
+  return fill(own ?? (UI[S.lang] && UI[S.lang][key]) ?? UI.en[key] ?? key, vars);
+}
+// Content written for this questionnaire, in the current language, falling back to the first one. {n} is the number of questions.
+function ct(field) {
+  const pick = l => C.content && C.content[l] && C.content[l][field];
+  const s = pick(S.lang) ?? pick(LANGS[0]);
+  return s ? fill(s, {n: QS.length}) : "";
+}
+const words = q => q[S.lang] || q[LANGS[0]];
+const label = o => typeof o === "string" ? o : (o[S.lang] ?? o[LANGS[0]] ?? "");
+const reduceMotion = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (_) { return false; } };
+
+// ---------- options ----------
+function optionsFor(q) {
+  const unsure = {key: "unsure", label: t("pick_unsure"), short: t("short_unsure"), cls: "unsure"};
+  if (q.kind === "open") return [unsure];
+  if (q.kind === "choice") {
+    const own = q.options.map(o => ({key: o.key, label: label(o.label), short: label(o.short || o.label), needsNote: !!o.needsNote, cls: "opt"}));
+    return q.unsure === false ? own : own.concat([unsure]);
+  }
+  return [
+    {key: "yes", label: t("pick_yes"), short: t("short_yes"), cls: "yes"},
+    {key: "other", label: t("pick_other"), short: t("short_other"), needsNote: true, cls: "other"},
+    unsure
+  ];
+}
+function optionOf(q, key) {
+  if (q.kind === "open" && key === "answer") return {key: "answer", short: t("short_note"), needsNote: true, cls: "opt"};
+  return optionsFor(q).find(o => o.key === key) || null;
+}
+const isWritten = (q, a) => q.kind === "open" && a && a.pick === "answer";
+
+// ---------- language ----------
+function loadLang() { try { const v = localStorage.getItem(LANG_KEY); if (LANGS.includes(v)) S.lang = v; } catch (_) {} }
+function setLang(lang) {
+  if (lang === S.lang) return;
+  S.lang = lang; try { localStorage.setItem(LANG_KEY, lang); } catch (_) {}
+  applyLang(); for (const q of QS) refreshCard(q.id, true); refreshExtra(); refreshSummary();
+}
+function renderIntro() {
+  $("#h1").textContent = ct("heading") || C.title;
+  const lede = ct("lede"); $("#lede").textContent = lede; $("#lede").hidden = !lede;
+  const meta = $("#meta"); meta.replaceChildren();
+  for (const k of ["purpose", "from", "to", "used"]) {
+    const v = ct(k) || (k === "used" ? t("usedDefault") : "");
+    if (v) meta.append(el("dt", null, t(k + "L")), el("dd", null, v));
+  }
+  // Context is the questionnaire author's own HTML (links to the material it is about).
+  const ctx = ct("context"); $("#context").innerHTML = ctx; $("#context").hidden = $("#context-h").hidden = !ctx;
+  const kinds = new Set(QS.map(q => q.kind));
+  $("#how").textContent = [ct("how"), t("how1"), kinds.has("decision") ? t("howDecision") : "", kinds.has("open") ? t("howOpen") : "", t("howFlow"), t("howNav")].filter(Boolean).join(" ");
+}
+function applyLang() {
+  document.documentElement.lang = S.lang;
+  for (const b of document.querySelectorAll("#lang button")) b.setAttribute("aria-pressed", String(b.dataset.lang === S.lang));
+  $("#lang").setAttribute("aria-label", t("langAria"));
+  $("#bar").setAttribute("aria-label", t("barAria"));
+  $("#filters").setAttribute("aria-label", t("filtersAria"));
+  $("#people").setAttribute("aria-label", t("peopleAria"));
+  $("#copyout").setAttribute("aria-label", t("copyAria"));
+  $("#fab").setAttribute("aria-label", t("fabAria"));
+  renderIntro();
+  for (const n of document.querySelectorAll("[data-i18n]")) n.textContent = t(n.dataset.i18n);
+  for (const n of document.querySelectorAll("[data-i18n-ph]")) n.placeholder = t(n.dataset.i18nPh);
+  for (const n of document.querySelectorAll("[data-i18n-aria]")) { n.setAttribute("aria-label", t(n.dataset.i18nAria)); n.title = t(n.dataset.i18nAria); }
+  for (const h of document.querySelectorAll("#qs h2, #toc-list .toc-group")) h.textContent = label(GROUPS[h.dataset.group] || h.dataset.group);
+  for (const q of QS) {
+    const w = words(q);
+    $('#toc-list a[data-q="' + q.id + '"] .ttl').textContent = w.title;
+    const card = $("#" + CSS.escape(q.id));
+    card.querySelector("[data-role=title]").textContent = w.title;
+    card.querySelector("[data-role=body]").textContent = w.body || "";
+    card.querySelector("[data-role=reclabel]").textContent = t("rec");
+    card.querySelector("[data-role=rectext]").textContent = w.rec || "";
+    card.querySelector("[data-role=rec]").hidden = !w.rec;
+    card.querySelector("legend").textContent = t("legend");
+    for (const o of optionsFor(q)) card.querySelector('[data-pick="' + o.key + '"]').textContent = o.label;
+  }
+  renderBanner(); renderWho(); renderStatus();
+  const cs = $("#copy-status"); if (cs.dataset.key) cs.textContent = t(cs.dataset.key);
+}
+
+// ---------- static render ----------
+const card$ = id => $("#" + CSS.escape(id));
+const note$ = id => document.getElementById("note-" + id);
+function renderLangs() {
+  const box = $("#lang");
+  for (const l of LANGS) {
+    const b = el("button", null, (C.ui && C.ui[l] && C.ui[l].langName) || (UI[l] && UI[l].langName) || l);
+    b.type = "button"; b.dataset.lang = l; b.lang = l; b.addEventListener("click", () => setLang(l)); box.append(b);
+  }
+  $("#top").hidden = LANGS.length < 2;
+}
+function renderQuestions() {
+  const main = $("#qs"); let group = null;
+  for (const q of QS) {
+    if (q.group && q.group !== group) { group = q.group; const h = el("h2"); h.dataset.group = group; main.append(h); }
+    const open = q.kind === "open";
+    const card = el("article", "sheet card"); card.id = q.id;
+    const head = el("div", "qhead"); const left = el("div", "qtitle");
+    const h3 = el("h3"); h3.dataset.role = "title"; h3.tabIndex = -1;
+    left.append(el("span", "qnum", q.id), h3);
+    const tag = el("span", "tag"); tag.hidden = true; tag.dataset.role = "tag";
+    head.append(left, tag);
+    const sum = el("div", "sum"); sum.dataset.role = "sum"; sum.hidden = true;
+    const sumText = el("span", "sum-text"); sumText.dataset.role = "sumtext";
+    const edit = el("button", "editbtn"); edit.type = "button"; edit.dataset.role = "edit"; edit.dataset.i18n = "edit";
+    edit.setAttribute("aria-controls", "fold-" + q.id); edit.setAttribute("aria-expanded", "false");
+    edit.addEventListener("click", () => onEdit(q.id));
+    sum.append(sumText, edit);
+    const fold = el("div", "fold"); fold.id = "fold-" + q.id; const inner = el("div", "fold-in");
+    const body = el("p", "body"); body.dataset.role = "body";
+    const rec = el("div", "rec"); rec.dataset.role = "rec"; const rb = el("b"); rb.dataset.role = "reclabel"; const rp = el("p"); rp.dataset.role = "rectext"; rec.append(rb, rp);
+    const fs = el("fieldset"); fs.append(el("legend"));
+    const opts = el("div", "opts");
+    // Arrow keys move through radios and select as they go, so a keyboard choice doesn't jump the page; the card's own button does.
+    opts.addEventListener("keydown", e => { if (e.key.startsWith("Arrow")) S.arrow = true; else if (e.key === " ") S.arrow = false; });
+    opts.addEventListener("pointerdown", () => { S.arrow = false; });
+    for (const o of optionsFor(q)) {
+      const lab = el("label", "opt"); const inp = document.createElement("input");
+      // An open question has a single "not sure" toggle beside its written answer.
+      inp.type = open ? "checkbox" : "radio"; inp.name = "pick-" + q.id; inp.value = o.key; inp.id = "pick-" + q.id + "-" + o.key;
+      inp.addEventListener("change", () => open ? onUnsure(q.id, inp.checked) : onPick(q.id, o.key));
+      const sp = el("span"); sp.dataset.pick = o.key; lab.append(inp, sp); opts.append(lab);
+    }
+    const tl = el("label", "small"); tl.htmlFor = "note-" + q.id; tl.dataset.role = "notelabel";
+    const ta = document.createElement("textarea"); ta.id = "note-" + q.id;
+    ta.addEventListener("input", () => onNote(q.id, ta.value));
+    const st = el("div", "status"); st.dataset.role = "status"; st.setAttribute("aria-live", "polite");
+    if (open) fs.append(tl, ta, opts, st); else fs.append(opts, tl, ta, st);
+    const foot = el("div", "foot"); foot.dataset.role = "foot"; foot.hidden = true;
+    const done = el("button", "btn"); done.type = "button"; done.dataset.role = "done"; done.dataset.i18n = "doneNext";
+    done.addEventListener("click", () => onDone(q.id));
+    foot.append(done);
+    const others = el("div", "others"); others.dataset.role = "others";
+    inner.append(body, rec, fs, foot, others); fold.append(inner);
+    card.append(head, sum, fold);
+    main.append(card);
+  }
+  $("#extra-note").addEventListener("input", e => onExtra(e.target.value));
+  for (const b of document.querySelectorAll(".chipbtn")) b.addEventListener("click", () => { S.filter = b.dataset.f; for (const x of document.querySelectorAll(".chipbtn")) x.setAttribute("aria-pressed", String(x === b)); applyFilter(); });
+  for (const b of document.querySelectorAll("#fab button")) b.addEventListener("click", () => onFab(b.dataset.go));
+  $("#copy").addEventListener("click", onCopy);
+}
+
+// ---------- local edits ----------
+const now = () => new Date().toISOString();
+function myAnswer(id) { return S.mine.answers[id] || null; }
+// An answer is complete once it has a pick, and its text when the pick needs one.
+function isDone(id) {
+  const a = myAnswer(id); if (!a || !a.pick) return false;
+  const o = optionOf(byId[id], a.pick); if (!o) return false;
+  return !(o.needsNote && !(a.note || "").trim());
+}
+function isCollapsed(id) { return isDone(id) && !S.open.has(id); }
+function afterChange(id, advance) {
+  S.touched.add(id); S.open.add(id); clearTimeout(S.pending[id]);
+  refreshCard(id); refreshSummary(); scheduleSave(0);
+  if (advance) S.pending[id] = setTimeout(() => closeAndNext(id), reduceMotion() ? 0 : 160);
+}
+function onPick(id, pick) {
+  enableAnim();
+  const viaArrow = S.arrow; S.arrow = false;
+  S.mine.answers[id] = Object.assign({note: ""}, myAnswer(id) || {}, {pick, at: now()});
+  const done = isDone(id);
+  afterChange(id, done && !viaArrow);
+  if (!done) note$(id).focus();
+}
+function onUnsure(id, on) {
+  enableAnim();
+  const prev = myAnswer(id) || {note: ""}; const note = prev.note || "";
+  const pick = on ? "unsure" : (note.trim() ? "answer" : null);
+  if (!pick && !note.trim()) delete S.mine.answers[id];
+  else S.mine.answers[id] = Object.assign({}, prev, {pick, at: now()});
+  afterChange(id, on);
+}
+function onNote(id, note) {
+  const q = byId[id]; const prev = myAnswer(id) || {pick: null};
+  let pick = prev.pick;
+  if (q.kind === "open" && pick !== "unsure") pick = note.trim() ? "answer" : null;
+  S.mine.answers[id] = Object.assign({}, prev, {pick, note, at: now()});
+  if (!pick && !note.trim()) delete S.mine.answers[id];
+  S.touched.add(id); S.open.add(id); refreshCard(id, true); refreshSummary(); scheduleSave(700);
+}
+function onExtra(note) {
+  S.mine.extra = note.trim() ? {note, at: now()} : null; S.touched.add("extra");
+  scheduleSave(700);
+}
+function onEdit(id) {
+  enableAnim(); S.open.add(id); applyFold(id);
+  const card = card$(id); (card.querySelector("input:checked") || note$(id)).focus({preventScroll: true});
+}
+function onDone(id) { if (!isDone(id)) return; clearTimeout(S.pending[id]); closeAndNext(id); }
+
+// ---------- folding and moving ----------
+function enableAnim() {
+  if (S.animOn) return; S.animOn = true;
+  requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("anim")));
+}
+function closeAndNext(id) {
+  S.open.delete(id); applyFold(id); applyFilter();
+  const idx = QS.findIndex(q => q.id === id);
+  whenFolded(id, () => goTo(nextUnanswered(idx) || $("#extra")));
+}
+// Scrolling starts once the card has finished folding, so the target's position is final when the scroll is aimed.
+function whenFolded(id, then) {
+  const fold = document.getElementById("fold-" + id);
+  if (card$(id).hidden || reduceMotion() || !document.body.classList.contains("anim")) return then();
+  let done = false;
+  const go = () => { if (done) return; done = true; fold.removeEventListener("transitionend", onEnd); then(); };
+  const onEnd = e => { if (e.target === fold && e.propertyName === "grid-template-rows") go(); };
+  fold.addEventListener("transitionend", onEnd);
+  setTimeout(go, 700);
+}
+function shown(i) { return !card$(QS[i].id).hidden; }
+// The first visible question I haven't answered after index `from`, wrapping round to the start.
+function nextUnanswered(from) {
+  for (let i = from + 1; i < QS.length; i++) if (shown(i) && !isDone(QS[i].id)) return card$(QS[i].id);
+  for (let i = 0; i <= from && i < QS.length; i++) if (shown(i) && !isDone(QS[i].id)) return card$(QS[i].id);
+  return null;
+}
+// The question at the top of the view, under the sticky bar; -1 above the first one.
+function currentIndex() {
+  const line = $("#bar").getBoundingClientRect().bottom + 24; let cur = -1;
+  QS.forEach((q, i) => { if (shown(i) && card$(q.id).getBoundingClientRect().top <= line) cur = i; });
+  return cur;
+}
+function goTo(node) {
+  if (!node) return;
+  const smooth = !reduceMotion();
+  node.scrollIntoView({behavior: smooth ? "smooth" : "auto", block: "start"});
+  const h = node.querySelector("h3"); if (h) h.focus({preventScroll: true});
+  if (smooth) {
+    node.classList.remove("flash"); void node.offsetWidth; node.classList.add("flash");
+    node.addEventListener("animationend", () => node.classList.remove("flash"), {once: true});
+    settle(node);
+  }
+}
+// If the layout moved while the smooth scroll ran, nudge the target back under the bar once it stops,
+// unless the viewer has scrolled in the meantime.
+function settle(node) {
+  if (S.settle) S.settle();
+  let off = false;
+  const user = () => { stop(); };
+  const fix = () => {
+    stop();
+    const want = parseFloat(getComputedStyle(node).scrollMarginTop) || 0;
+    const d = node.getBoundingClientRect().top - want;
+    if (Math.abs(d) > 2) window.scrollBy({top: d, behavior: "smooth"});
+  };
+  const stop = () => {
+    if (off) return; off = true; S.settle = null; clearTimeout(timer);
+    removeEventListener("scrollend", fix); removeEventListener("wheel", user); removeEventListener("touchstart", user);
+    removeEventListener("pointerdown", user); removeEventListener("keydown", user);
+  };
+  const timer = setTimeout("onscrollend" in window ? stop : fix, 1500);
+  if ("onscrollend" in window) addEventListener("scrollend", fix);
+  addEventListener("wheel", user, {passive: true}); addEventListener("touchstart", user, {passive: true});
+  addEventListener("pointerdown", user); addEventListener("keydown", user);
+  S.settle = stop;
+}
+function onFab(go) {
+  if (go === "toc") { if (S.tocOpen) closeToc(true); else openToc(); return; }
+  if (go === "top") { window.scrollTo({top: 0, behavior: reduceMotion() ? "auto" : "smooth"}); return; }
+  if (go === "last") {
+    for (let i = QS.length - 1; i >= 0; i--) if (shown(i)) return goTo(card$(QS[i].id));
+    return goTo($("#extra"));
+  }
+  const cur = currentIndex(); let target = nextUnanswered(cur);
+  if (!target) for (let i = cur + 1; i < QS.length; i++) if (shown(i)) { target = card$(QS[i].id); break; }
+  goTo(target || $("#extra"));
+}
+function applyFold(id) {
+  const card = card$(id); const c = isCollapsed(id); const a = myAnswer(id);
+  card.classList.toggle("collapsed", c);
+  document.getElementById("fold-" + id).inert = c;
+  card.querySelector("[data-role=sum]").hidden = !c;
+  card.querySelector("[data-role=edit]").setAttribute("aria-expanded", String(!c));
+  card.querySelector("[data-role=foot]").hidden = c || !(a && a.pick);
+  card.querySelector("[data-role=done]").disabled = !isDone(id);
+}
+
+// ---------- question index ----------
+function renderToc() {
+  const list = $("#toc-list"); let group, sub = null;
+  for (const q of QS) {
+    if (!sub || (q.group && q.group !== group)) {
+      group = q.group; const li = el("li"); sub = el("ol");
+      if (group) { const lab = el("div", "toc-group"); lab.dataset.group = group; li.append(lab); }
+      li.append(sub); list.append(li);
+    }
+    const li = el("li"); const a = el("a"); a.href = "#" + q.id; a.dataset.q = q.id;
+    const mark = el("span", "mark"); mark.setAttribute("aria-hidden", "true");
+    mark.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+    a.append(mark, el("span", "tid", q.id), el("span", "ttl"), el("span", "sr"));
+    a.addEventListener("click", e => { e.preventDefault(); jumpTo(q.id); });
+    li.append(a); sub.append(li);
+  }
+  $("#toc-close").addEventListener("click", () => closeToc(true));
+  $("#scrim").addEventListener("click", () => closeToc(true));
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && S.tocOpen) closeToc(true); });
+}
+// The tick follows the viewer's own answers, like "Next for you".
+function refreshToc() {
+  let m = 0;
+  for (const q of QS) {
+    const a = $('#toc-list a[data-q="' + q.id + '"]'); const ans = myAnswer(q.id);
+    const state = isDone(q.id) ? "done" : ans && ans.pick ? "part" : "";
+    if (state === "done") m++;
+    a.querySelector(".mark").className = "mark" + (state ? " " + state : "");
+    a.querySelector(".sr").textContent = ", " + t(state === "done" ? "mDone" : state === "part" ? "mPart" : "mEmpty");
+  }
+  $("#toc-count").textContent = t("tocCount", {m, n: QS.length});
+}
+function jumpTo(id) {
+  const card = card$(id);
+  if (card.hidden) {
+    S.filter = "all";
+    for (const x of document.querySelectorAll(".chipbtn")) x.setAttribute("aria-pressed", String(x.dataset.f === "all"));
+    applyFilter();
+  }
+  if (S.tocOpen) closeToc(false);
+  goTo(card);
+}
+// Marks the question at the top of the view and keeps its entry visible inside the list.
+function spy() {
+  S.spyQueued = false;
+  const cur = currentIndex(); if (cur === S.cur) return; S.cur = cur;
+  for (const a of document.querySelectorAll("#toc-list a[aria-current]")) a.removeAttribute("aria-current");
+  if (cur < 0) return;
+  const a = $('#toc-list a[data-q="' + QS[cur].id + '"]'); a.setAttribute("aria-current", "true");
+  const box = $("#toc"); const lr = a.getBoundingClientRect(), br = box.getBoundingClientRect();
+  if (lr.top < br.top + 56) box.scrollTop -= br.top + 56 - lr.top;
+  else if (lr.bottom > br.bottom - 16) box.scrollTop += lr.bottom - br.bottom + 16;
+}
+function queueSpy() { if (!S.spyQueued) { S.spyQueued = true; requestAnimationFrame(spy); } }
+// On narrow screens the list is a drawer: the page behind it is inert while it is open.
+function setDrawer(open) {
+  const narrow = !WIDE.matches; S.tocOpen = open && narrow;
+  $("#toc").classList.toggle("open", S.tocOpen);
+  $("#toc").inert = narrow && !S.tocOpen;
+  $(".wrap").inert = S.tocOpen;
+  for (const b of document.querySelectorAll("#fab button:not([data-go=toc])")) b.inert = S.tocOpen;
+  $("#scrim").hidden = !S.tocOpen;
+  $("#fab [data-go=toc]").setAttribute("aria-expanded", String(S.tocOpen));
+}
+function openToc() {
+  setDrawer(true);
+  const box = $("#toc"); const a = $('#toc-list a[aria-current="true"]') || $("#toc-list a");
+  box.scrollTop = Math.max(0, a.offsetTop - box.clientHeight / 2);
+  a.focus({preventScroll: true});
+}
+function closeToc(restore) { setDrawer(false); if (restore) $("#fab [data-go=toc]").focus(); }
+
+// ---------- saving ----------
+function markAll(key, vars, bad) { S.status = {key, vars, bad: !!bad}; renderStatus(); }
+function renderStatus() {
+  if (!S.status) return;
+  const text = t(S.status.key, S.status.vars);
+  for (const id of S.touched) {
+    const n = id === "extra" ? $("#extra-status") : byId[id] && card$(id).querySelector("[data-role=status]");
+    if (n) { n.textContent = text; n.classList.toggle("bad", S.status.bad); }
+  }
+}
+function scheduleSave(ms) {
+  if (!S.canSave) { saveLocal(); markAll("stLocal"); return; }
+  clearTimeout(S.timer); markAll("stSaving");
+  S.timer = setTimeout(flush, ms);
+}
+async function flush() {
+  if (S.writing) { S.dirty = true; return; }
+  S.writing = true; S.dirty = false;
+  const body = {answers: S.mine.answers, extra: S.mine.extra, updatedAt: now()};
+  try {
+    await S.db.doc("responses/" + S.myId).set(body);
+    markAll("stSaved");
+  } catch (e) {
+    const code = e && e.code;
+    if (code === "invalid_argument") goLocal("bRejected");
+    else if (code === "unavailable" && !S.retried) { S.retried = true; S.writing = false; setTimeout(flush, 800 + Math.random() * 800); return; }
+    else if (code === "quota_exceeded") markAll("stQuota", null, true);
+    else markAll("stError", {msg: e && e.message ? e.message : t("unknownErr")}, true);
+  }
+  S.retried = false; S.writing = false;
+  if (S.dirty) flush();
+}
+function saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(S.mine)); } catch (_) {} }
+function loadLocal() { try { const v = JSON.parse(localStorage.getItem(LS_KEY) || "null"); if (v && v.answers) { S.mine = v; Object.keys(v.answers).forEach(k => S.touched.add(k)); } } catch (_) {} }
+function setBanner(key, kind) { S.banner = key ? {key, kind} : null; renderBanner(); }
+function renderBanner() {
+  const b = $("#banner");
+  if (!S.banner) { b.hidden = true; return; }
+  b.hidden = false; b.className = "banner " + S.banner.kind; b.textContent = t(S.banner.key);
+}
+function goLocal(key) { S.canSave = false; setBanner(key, "warn"); saveLocal(); markAll("stLocalShort"); }
+
+// ---------- who ----------
+function renderWho() {
+  const who = $("#who"); who.replaceChildren();
+  if (S.who === "loading") who.append(el("span", null, t("loading")));
+  else if (S.who === "out") who.append(el("span", null, t("whoOut")));
+  else if (S.me) { const img = document.createElement("img"); img.alt = ""; img.src = S.me.avatarUrl; who.append(img, el("span", null, t("whoAs", {name: S.me.name || t("whoYou")}))); }
+  else who.append(el("span", null, t("whoGuest")));
+}
+
+// ---------- shared state render ----------
+function allAnswerers() {
+  const out = [];
+  for (const [uid, doc] of Object.entries(S.responses)) { if (uid !== S.myId) out.push([uid, doc]); }
+  out.push([S.myId || "you", S.mine]);
+  return out;
+}
+function answeredBy(id) { return allAnswerers().filter(([, d]) => d && d.answers && d.answers[id] && d.answers[id].pick); }
+async function resolveProfiles() {
+  const ids = Object.keys(S.responses).concat(S.myId ? [S.myId] : []);
+  if (S.user && ids.length) { try { S.profiles = await S.user.profiles(ids); } catch (_) {} }
+}
+function nameOf(uid) { if (uid === S.myId || uid === "you") return t("you"); const p = S.profiles[uid]; return (p && p.name) || t("someone"); }
+function avatarOf(uid) { const p = uid === S.myId && S.me ? S.me : S.profiles[uid]; return p && p.avatarUrl ? p.avatarUrl : ""; }
+function answerRow(q, uid, a) {
+  const row = el("div", "ans"); const img = document.createElement("img"); img.alt = ""; const src = avatarOf(uid); if (src) img.src = src; else img.style.visibility = "hidden";
+  const txt = el("div"); txt.append(el("span", "who2", nameOf(uid)));
+  if (a.pick && !(q && isWritten(q, a))) { const o = q && optionOf(q, a.pick); txt.append(el("span", "pk " + (o ? o.cls : "opt"), o ? o.short : a.pick)); }
+  if (a.note && a.note.trim()) txt.append(el("div", "note", a.note));
+  row.append(img, txt); return row;
+}
+function refreshCard(id, keepText) {
+  const card = card$(id); if (!card) return;
+  const q = byId[id]; const a = myAnswer(id);
+  for (const inp of card.querySelectorAll("input")) inp.checked = !!a && a.pick === inp.value;
+  const ta = note$(id); if (!keepText && document.activeElement !== ta) ta.value = a && a.note ? a.note : "";
+  const o = a && a.pick ? optionOf(q, a.pick) : null;
+  const writing = q.kind === "open" && !(a && a.pick === "unsure");
+  card.querySelector("[data-role=notelabel]").textContent = writing ? t("noteAnswer") : o && o.needsNote ? t(q.kind === "decision" ? "noteNeed" : "noteNeedChoice") : t("noteL");
+  ta.placeholder = writing ? t("notePhOpen") : t("notePh");
+  ta.classList.toggle("need", !!(o && o.needsNote && !writing && !(a.note || "").trim()));
+  const others = card.querySelector("[data-role=others]"); others.replaceChildren();
+  const list = Object.entries(S.responses).filter(([uid, d]) => uid !== S.myId && d && d.answers && d.answers[id] && (d.answers[id].pick || (d.answers[id].note || "").trim()));
+  if (!list.length) others.append(el("div", "none", t("none")));
+  else { others.append(el("div", "small", t("teamAnswers"))); for (const [uid, d] of list) others.append(answerRow(q, uid, d.answers[id])); }
+  const sumText = card.querySelector("[data-role=sumtext]"); sumText.replaceChildren();
+  if (a && a.pick) {
+    const note = (a.note || "").trim().replace(/\s+/g, " ");
+    sumText.append(el("span", "sum-pick", isWritten(q, a) ? t("legend") : t("sumYou", {pick: o ? o.short : a.pick})));
+    if (note) sumText.append(el("span", "sum-note", "— " + note));
+    if (list.length) sumText.append(el("span", "sum-team", "· " + t("sumTeam", {n: list.length})));
+  }
+  applyFold(id);
+}
+function refreshExtra() {
+  const box = $("#extra-others"); box.replaceChildren();
+  const list = Object.entries(S.responses).filter(([uid, d]) => uid !== S.myId && d && d.extra && (d.extra.note || "").trim());
+  if (list.length) { box.append(el("div", "small", t("extraTeam"))); for (const [uid, d] of list) box.append(answerRow(null, uid, {note: d.extra.note})); }
+  else box.append(el("div", "none", t("extraNone")));
+  const ta = $("#extra-note"); if (document.activeElement !== ta) ta.value = S.mine.extra && S.mine.extra.note ? S.mine.extra.note : "";
+}
+function refreshSummary() {
+  const mineN = QS.filter(q => isDone(q.id)).length;
+  const anyN = QS.filter(q => answeredBy(q.id).length).length;
+  $("#progress").textContent = t("progress", {m: mineN, n: QS.length, a: anyN});
+  let next = null;
+  for (const q of QS) {
+    const tag = card$(q.id).querySelector("[data-role=tag]"); const done = isDone(q.id);
+    if (!done && !next) { next = q.id; tag.hidden = false; tag.className = "tag next"; tag.textContent = t("tagNext"); }
+    else if (done) { tag.hidden = false; tag.className = "tag done"; tag.textContent = t("tagDone"); }
+    else tag.hidden = true;
+  }
+  const ppl = $("#people"); ppl.replaceChildren();
+  const others = Object.entries(S.responses).filter(([uid, d]) => uid !== S.myId && d && d.answers);
+  if (others.length) {
+    ppl.append(el("span", null, t("answeredSoFar")));
+    for (const [uid, d] of others) { const n = Object.values(d.answers).filter(a => a && a.pick).length; const s = el("span"); const img = document.createElement("img"); img.alt = ""; const src = avatarOf(uid); if (src) img.src = src; s.append(img, document.createTextNode(`${nameOf(uid)} · ${n}`)); ppl.append(s); }
+  }
+  applyFilter(); refreshToc(); queueSpy();
+}
+function applyFilter() {
+  for (const q of QS) {
+    let show = true;
+    // A card the viewer is still working in stays visible until it closes.
+    if (S.filter === "mine") show = !isDone(q.id) || S.open.has(q.id);
+    if (S.filter === "open") show = answeredBy(q.id).length === 0 || S.open.has(q.id);
+    card$(q.id).hidden = !show;
+  }
+  for (const h of document.querySelectorAll("#qs h2")) {
+    const any = QS.some(q => q.group === h.dataset.group && !card$(q.id).hidden); h.hidden = !any;
+  }
+}
+async function refreshAll() {
+  await resolveProfiles();
+  for (const q of QS) refreshCard(q.id); refreshExtra(); refreshSummary();
+}
+
+// ---------- copy ----------
+function asText() {
+  const lines = [t("txtHead", {title: ct("heading") || C.title}), ""];
+  const people = allAnswerers();
+  for (const q of QS) {
+    lines.push(`${q.id} ${words(q).title}`);
+    let any = false;
+    for (const [uid, d] of people) {
+      const a = d && d.answers && d.answers[q.id]; if (!a || (!a.pick && !(a.note || "").trim())) continue; any = true;
+      const o = a.pick ? optionOf(q, a.pick) : null;
+      const what = isWritten(q, a) ? "" : a.pick ? (o ? o.short : a.pick) : t("short_note");
+      const note = (a.note || "").trim().replace(/\s+/g, " ");
+      lines.push(`- ${nameOf(uid)}: ${[what, note].filter(Boolean).join(" — ")}`);
+    }
+    if (!any) lines.push(t("txtNone"));
+    lines.push("");
+  }
+  const notes = people.filter(([, d]) => d && d.extra && (d.extra.note || "").trim());
+  if (notes.length) { lines.push(t("txtExtra")); for (const [uid, d] of notes) lines.push(`- ${nameOf(uid)}: ${d.extra.note.trim().replace(/\s+/g, " ")}`); }
+  return lines.join("\n");
+}
+function onCopy() {
+  const text = asText(); const out = $("#copyout"); const st = $("#copy-status");
+  const show = key => { st.dataset.key = key; st.textContent = t(key); };
+  const fallback = () => { out.hidden = false; out.value = text; out.focus(); out.select(); show("copyFallback"); };
+  try {
+    navigator.clipboard.writeText(text).then(() => { show("copied"); out.hidden = true; }, fallback);
+  } catch (_) { fallback(); }
+}
+
+// ---------- boot ----------
+function trackBar() {
+  const bar = $("#bar");
+  const set = () => document.documentElement.style.setProperty("--bar-h", bar.offsetHeight + "px");
+  set(); try { new ResizeObserver(set).observe(bar); } catch (_) { addEventListener("resize", set); }
+}
+async function boot() {
+  loadLang(); renderLangs(); renderQuestions(); renderToc(); applyLang(); trackBar();
+  setDrawer(false);
+  try { WIDE.addEventListener("change", () => setDrawer(false)); } catch (_) { WIDE.addListener(() => setDrawer(false)); }
+  addEventListener("scroll", queueSpy, {passive: true});
+  refreshSummary(); refreshExtra(); for (const q of QS) refreshCard(q.id);
+  const c = window.claude;
+  if (!c || typeof c.use !== "function") { S.who = "out"; renderWho(); loadLocal(); goLocal("bNoClaude"); refreshAll().then(enableAnim); return; }
+  const [db, user] = await Promise.all([c.use("db"), c.use("user")]);
+  S.db = db; S.user = user;
+  S.me = user ? await user.me() : null; S.myId = S.me && S.me.id;
+  S.who = "ready"; renderWho();
+  if (!db || !S.myId) { loadLocal(); goLocal("bNoIdentity"); refreshAll().then(enableAnim); return; }
+  const may = user ? await user.can("data.write") : null;
+  S.canSave = may !== false;
+  if (!S.canSave) goLocal("bNoWrite");
+  else setBanner(null);
+  db.collection("responses").onSnapshot(async snap => {
+    const next = {};
+    for (const d of snap.docs) if (d.exists) next[d.id] = d.data();
+    S.responses = next;
+    const mineDoc = next[S.myId];
+    if (!S.loaded && (mineDoc || !snap.metadata.fromCache)) {
+      S.loaded = true;
+      if (mineDoc && mineDoc.answers) {
+        for (const [k, v] of Object.entries(mineDoc.answers)) if (!S.touched.has(k)) S.mine.answers[k] = Object.assign({}, v);
+        if (!S.touched.has("extra") && mineDoc.extra) S.mine.extra = Object.assign({}, mineDoc.extra);
+      }
+    }
+    await refreshAll();
+    if (S.loaded) enableAnim();
+  }, err => setBanner(err && err.code === "revoked" ? "bRevoked" : "bStopped", "warn"));
+}
+boot();
+</script>

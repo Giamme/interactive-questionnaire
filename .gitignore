@@ -1,0 +1,7 @@
+# Private examples stay on this machine.
+examples/private/
+
+# Build and preview output
+*.preview.html
+__pycache__/
+.DS_Store

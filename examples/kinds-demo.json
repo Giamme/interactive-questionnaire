@@ -1,0 +1,50 @@
+{
+  "id": "offsite-2027",
+  "title": "Offsite Planning Round",
+  "languages": ["en"],
+  "content": {
+    "en": {
+      "heading": "Planning the March offsite",
+      "lede": "{n} short questions to settle where we go, for how long, and what we must talk about.",
+      "purpose": "Book the venue by the end of the month.",
+      "from": "The people team",
+      "to": "Everyone in the product group",
+      "used": "Each answer is saved under your name, and everyone with this page can see it. The people team reads them on Friday and books the venue.",
+      "how": "Each question takes under a minute."
+    }
+  },
+  "groups": [
+    {"key": "plan", "label": {"en": "The plan"}},
+    {"key": "you", "label": {"en": "From you"}}
+  ],
+  "questions": [
+    {
+      "id": "Q1", "group": "plan", "kind": "decision",
+      "en": {
+        "title": "Two days, not three",
+        "body": "Last year the third day was half empty: 14 of 38 people had left by lunch.",
+        "rec": "Two days, Thursday and Friday, with the evening in between for dinner."
+      }
+    },
+    {
+      "id": "Q2", "group": "plan", "kind": "choice",
+      "options": [
+        {"key": "lisbon", "label": {"en": "Lisbon"}},
+        {"key": "turin", "label": {"en": "Turin"}},
+        {"key": "elsewhere", "label": {"en": "Somewhere else"}, "needsNote": true}
+      ],
+      "en": {
+        "title": "Where should we go?",
+        "body": "All three fit the budget for 40 people in March.",
+        "rec": "Turin: one train for most of us, and the venue holds the date until the 30th."
+      }
+    },
+    {
+      "id": "Q3", "group": "you", "kind": "open",
+      "en": {
+        "title": "One topic we must cover",
+        "body": "The thing you'd be disappointed to leave the offsite without discussing."
+      }
+    }
+  ]
+}
