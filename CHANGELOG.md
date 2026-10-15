@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and versions follow the format `{major}.{minor}` ([...] parts appear only when non-zero).
 
+## [0.3] - 2026-10-15
+
+The skill can now make a questionnaire as a single HTML file for people who don't use claude.ai: it opens in any browser, travels from person to person with everyone's answers inside, and Claude reads the answers back from a returned copy.
+
+### Highlights
+
+- A file version for people who don't use claude.ai: `build.py --standalone` writes one HTML file that opens in any browser with no account or server. Each person answers, then «Save a copy with the answers» downloads the file with their answers and everyone's before them, to pass on; whoever collects adds the copies or codes that come back, and `import_answers.py` reads answers straight out of a returned copy. Where a viewer doesn't run the page (a file preview or an attachment preview), the file shows its title and asks to be opened in a browser instead of an empty frame.
+
 ## [0.2] - 2026-10-15
 
 Everyone who opens a shared questionnaire now sees the team's answers, and people the page can't save for, including visitors without a Claude account, send theirs as one compressed line that chats can't break.
