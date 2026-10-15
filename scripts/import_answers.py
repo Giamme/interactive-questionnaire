@@ -2,10 +2,14 @@
 """Read answers people sent as a message, for the ones the page couldn't save.
 
     python3 -I import_answers.py (--config CONFIG.json | --page PAGE.html)
-                                 MESSAGE.txt [MESSAGE2.txt …] --out DIR [--writes WRITES.json]
+                                 FILE [FILE2 …] --out DIR [--writes WRITES.json]
 
-A code is one line, IQ3. followed by letters and digits, made by the page's
-«Send your answers» (one person) or «Copy all answers» (everyone, with names). A file may hold several messages; "-"
+Each FILE is a message or text holding codes, or a copy of a standalone
+questionnaire file (build.py --standalone) that someone saved with «Save a copy
+with the answers»: the answers it carries are read too, and the same file can
+be the --page. A code is one line, IQ3. followed by letters and digits, made by
+the page's «Send your answers» (one person) or «Copy all answers» (everyone,
+with names). A file may hold several messages; "-"
 reads stdin. Whatever a chat app or mail client put inside the line (line
 breaks, quote marks, formatting, invisible characters) is skipped, and a
 checksum refuses a code that lost or changed characters. The earlier forms,
@@ -103,6 +107,21 @@ def try_open(pack):
         return open_pack(pack)
     except (ValueError, zlib.error):
         return None
+
+
+DATA_RE = re.compile(r"/\*DATA-START\*/(.*?)/\*DATA-END\*/", re.S)
+
+
+def carried(text: str):
+    """The answers a saved standalone copy carries, or nothing for a fresh file or any other text."""
+    m = DATA_RE.search(text)
+    if m:
+        try:
+            data = json.loads(m.group(1))
+        except ValueError:
+            data = None
+        if isinstance(data, dict):
+            yield data
 
 
 def find_codes(text: str):
@@ -246,7 +265,11 @@ def main():
     docs, problems = {}, 0
     for m in a.messages:
         text = sys.stdin.read() if m == "-" else Path(m).read_text(encoding="utf-8")
-        found = list(find_codes(text))
+        # A questionnaire file carries its answers in one place; its own source mentions IQ2 and IQ3, so don't scan it.
+        found = list(carried(text)) if DATA_RE.search(text) else list(find_codes(text))
+        if DATA_RE.search(text) and not found:
+            print(f"{m}: a copy of the questionnaire with no answers in it yet", file=sys.stderr)
+            continue
         if not found:
             print(f"{m}: no code found", file=sys.stderr)
             problems += 1

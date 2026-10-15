@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Build an interactive questionnaire page from a config.
 
-    python3 -I build.py CONFIG.json OUT.html [--preview]
+    python3 -I build.py CONFIG.json OUT.html [--preview | --standalone]
 
 Checks the config, fills the template, and checks the page's script with
-`node --check` when node is installed. --preview also writes OUT.preview.html,
-wrapped in a full document, for opening from a local web server. Publish
+`node --check` when node is installed.
+
+OUT.html is the page to publish as a claude.ai Artifact. --preview also writes
+OUT.preview.html, wrapped in a full document, for a local look; publish
 OUT.html, never the preview.
+
+--standalone writes OUT.html as one complete HTML file to share instead, for
+people who don't use claude.ai. Opened in any browser, it keeps each person's
+answers in their browser and saves copies of itself with everyone's answers.
 """
 import html
 import json
@@ -20,6 +26,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 TEMPLATE = HERE.parent / "assets" / "template.html"
 CONFIG_SLOT = "/*CONFIG-START*/null/*CONFIG-END*/"
+DATA_SLOT = "/*DATA-START*/null/*DATA-END*/"
 ID_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,39}$")
 KEY_RE = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
 KINDS = {"decision", "choice", "open"}
@@ -212,21 +219,35 @@ def main(argv):
         sys.exit("template.html has no config slot")
     page = page.replace(CONFIG_SLOT, "/*CONFIG-START*/" + data + "/*CONFIG-END*/", 1)
 
+    if DATA_SLOT not in page:
+        sys.exit("template.html has no data slot")
+    if page.lower().count("</script") != 1:
+        sys.exit("the page's script holds a closing script tag, which would end it early in a browser")
+
     problem = node_check(page)
     if problem:
         sys.exit("the page's script does not parse:\n" + problem)
 
+    summary = f"{len(cfg['questions'])} questions, languages {', '.join(cfg['languages'])}"
+    if "--standalone" in argv:
+        doc = document(page, cfg["languages"][0])
+        out_path.write_text(doc, encoding="utf-8")
+        print(f"wrote {out_path} ({len(doc.encode())} bytes, {summary}): one file to share; it works opened in any browser")
+        return
     out_path.write_text(page, encoding="utf-8")
-    print(f"wrote {out_path} ({len(page.encode())} bytes, {len(cfg['questions'])} questions, languages {', '.join(cfg['languages'])})")
+    print(f"wrote {out_path} ({len(page.encode())} bytes, {summary})")
     if "--preview" in argv:
         preview = out_path.with_suffix(".preview.html")
-        preview.write_text(
-            '<!doctype html><html><head><meta charset="utf-8">'
-            '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
-            "</head><body>" + page + "</body></html>",
-            encoding="utf-8",
-        )
+        preview.write_text(document(page, cfg["languages"][0]), encoding="utf-8")
         print(f"wrote {preview} (for a local look only; publish {out_path.name})")
+
+
+def document(page: str, lang: str) -> str:
+    """The page as a complete HTML file: its title, font links and styles in the head, the rest in the body."""
+    cut = page.index("</style>") + len("</style>")
+    return ('<!doctype html>\n<html lang="' + html.escape(lang) + '">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
+            + page[:cut] + "\n</head>\n<body>\n" + page[cut:] + "\n</body>\n</html>\n")
 
 
 if __name__ == "__main__":

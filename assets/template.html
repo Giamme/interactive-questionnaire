@@ -210,7 +210,7 @@ textarea.need{border-color:var(--warn)}
     <p class="body" data-i18n="sendP"></p>
     <label class="small" for="send-name" data-i18n="sendNameL"></label>
     <input class="field" id="send-name" type="text" autocomplete="name" maxlength="80" data-i18n-ph="sendNamePh">
-    <div class="row"><button class="btn" type="button" id="send-make" data-i18n="sendB"></button><span class="status" id="send-status" aria-live="polite"></span></div>
+    <div class="row"><button class="btn" type="button" id="send-file" data-i18n="sendFile" hidden></button><button class="btn" type="button" id="send-make" data-i18n="sendB"></button><span class="status" id="send-status" aria-live="polite"></span></div>
     <textarea class="copyout code1" id="send-out" readonly hidden></textarea>
     <div class="row"><button class="btn" type="button" id="send-copy" data-i18n="sendCopy" hidden></button><span class="status" id="send-copied" aria-live="polite"></span></div>
   </section>
@@ -220,12 +220,14 @@ textarea.need{border-color:var(--warn)}
     <p class="body" data-i18n="impP"></p>
     <textarea class="copyout" id="imp-text" aria-labelledby="imp-h" data-i18n-ph="impPh"></textarea>
     <div class="row"><button class="btn" type="button" id="imp-read" data-i18n="impRead"></button><button class="btn" type="button" id="imp-save" hidden></button></div>
+    <div class="row" id="imp-files-row" hidden><label class="small" for="imp-files" data-i18n="impFileL"></label><input type="file" id="imp-files" accept=".html,.htm,text/html" multiple></div>
     <div class="status" id="imp-status" aria-live="polite"></div>
+    <div class="status bad" id="imp-status2" aria-live="polite"></div>
   </section>
 
   <section class="sheet">
     <h3 data-i18n="copyH"></h3>
-    <p class="body" data-i18n="copyP"></p>
+    <p class="body" id="copy-p" data-i18n="copyP"></p>
     <div><button class="btn" type="button" id="copy" data-i18n="copyB"></button> <span class="status" id="copy-status"></span></div>
     <textarea class="copyout code1" id="copyout" readonly hidden></textarea>
   </section>
@@ -241,6 +243,10 @@ textarea.need{border-color:var(--warn)}
 </nav>
 
 <script>
+// A copy saved outside claude.ai carries everyone's answers here, as a «Copy all answers» bundle (v3).
+const CARRIED = /*DATA-START*/null/*DATA-END*/;
+// The document as it arrived, before the script changes anything: a saved copy is this with new answers in CARRIED.
+const PRISTINE = "<!doctype html>\n" + document.documentElement.outerHTML;
 // The questionnaire's own content. build.py fills it in; extract_config.py reads it back out of a published page.
 const CONFIG = /*CONFIG-START*/null/*CONFIG-END*/;
 
@@ -273,11 +279,19 @@ const UI = /*UI-START*/{
   "copyH": "Tutte le risposte in una riga", "copyP": "Le risposte di tutti, con i nomi, compresse in una sola riga di lettere e numeri che chat ed email non possono rovinare. Per rileggerle, chi possiede la pagina la incolla in fondo alla pagina, oppure la si incolla in una chat con Claude.", "copyNone": "Non ci sono ancora risposte da copiare.", "copyB": "Copia tutte le risposte", "copied": "Copiate", "copyFallback": "Selezionata qui sotto: copiala con la tastiera.",
   "stSaving": "Salvataggio…", "stSaved": "Salvata", "stLocal": "Tenuta solo in questo browser. Quando hai finito, inviala con «Invia le tue risposte» in fondo alla pagina.", "stLocalShort": "Tenuta solo in questo browser.", "stQuota": "Lo spazio della pagina è pieno, quindi non è stata salvata. Copia le risposte come testo in fondo.", "stError": "Non salvata: {msg}. Riprovo alla prossima modifica.", "unknownErr": "errore sconosciuto",
   "bConnecting": "Collegamento alle risposte condivise…",
-  "bNoClaude": "Questa pagina salva le risposte solo quando è aperta su claude.ai. Le tue restano in questo browser: quando hai finito, inviale come messaggio.",
   "bSignedOut": "Senza l’accesso a claude.ai non vedi le risposte del team e le tue non si salvano qui. Restano in questo browser: quando hai finito, inviale come messaggio.",
   "bNoIdentity": "Vedi le risposte del team, ma claude.ai non ti riconosce su questa pagina, quindi le tue non si salvano qui. Restano in questo browser: quando hai finito, inviale come messaggio.",
   "bNoWrite": "Vedi le risposte del team, ma il tuo accesso non ti permette di salvare le tue. Restano in questo browser: quando hai finito, inviale come messaggio.",
   "bRejected": "Il tuo accesso a questa pagina non ti permette di salvare le risposte. Le tue restano in questo browser: quando hai finito, inviale come messaggio.",
+  "bLocal": "Questa pagina è un file da passare di mano in mano. Le tue risposte restano in questo browser: quando hai finito, salva una copia del file con le tue risposte e mandala a chi viene dopo di te, o a chi raccoglie le risposte.",
+  "whoLocal": "Le tue risposte restano in questo browser",
+  "usedLocal": "Le risposte restano nel tuo browser finché non salvi una copia del file: chi la riceve vede le risposte di tutti quelli che hanno risposto prima, con i nomi.",
+  "stLocalFile": "Tenuta in questo browser. Quando hai finito, salva una copia del file in fondo alla pagina.",
+  "sendPLocal": "Scrivi il tuo nome e salva una copia del file: contiene le tue risposte e quelle di chi ha risposto prima di te. Mandala a chi viene dopo di te, o a chi raccoglie le risposte. Se preferisci, prepara invece il codice: una riga con le sole tue risposte, da incollare in un messaggio.",
+  "sendFile": "Salva una copia con le risposte", "sendFileDone": "Salvata come «{file}». Mandala a chi viene dopo di te, o a chi raccoglie le risposte.",
+  "impHLocal": "Aggiungi le risposte degli altri", "impPLocal": "Scegli le copie del file che ti hanno rimandato, o incolla un codice. Le risposte si aggiungono a quelle che vedi qui, in questo browser, e finiscono nelle copie che salvi.",
+  "impFileL": "Copie del file", "impFileBad": "Senza risposte di questo questionario: {files}.",
+  "copyPLocal": "Le risposte che vedi qui, con i nomi, compresse in una sola riga di lettere e numeri che chat ed email non possono rovinare. Per rileggerle, incollala in «Aggiungi le risposte degli altri» in un’altra copia di questo file, o in una chat con Claude.",
   "sendGo": "Invia le tue risposte",
   "sendH": "Invia le tue risposte", "sendP": "Le tue risposte non si salvano in questa pagina. Scrivi il tuo nome e prepara il codice: una sola riga che contiene tutte le tue risposte. Incollala in un messaggio a chi ti ha condiviso la pagina, per email o in chat, e le aggiungerà a quelle del team con il tuo nome.",
   "sendNameL": "Il tuo nome", "sendNamePh": "Nome e cognome", "sendB": "Prepara il codice", "sendCopy": "Copia il codice",
@@ -320,11 +334,19 @@ const UI = /*UI-START*/{
   "copyH": "All answers in one line", "copyP": "Everyone's answers, with names, compressed into a single line of letters and digits that chats and email can't spoil. To read them back, the page's owner pastes it at the end of the page, or you paste it into a chat with Claude.", "copyNone": "There are no answers to copy yet.", "copyB": "Copy all answers", "copied": "Copied", "copyFallback": "Selected below: copy it with your keyboard.",
   "stSaving": "Saving…", "stSaved": "Saved", "stLocal": "Kept in this browser only. When you're done, send it with «Send your answers» at the end of the page.", "stLocalShort": "Kept in this browser only.", "stQuota": "The page's storage is full, so this wasn't saved. Copy your answers as text at the end.", "stError": "Not saved: {msg}. It will try again on your next change.", "unknownErr": "unknown error",
   "bConnecting": "Connecting to the shared answers…",
-  "bNoClaude": "This page saves answers only when it is opened on claude.ai. Yours are kept in this browser; when you're done, send them as a message.",
   "bSignedOut": "Without signing in to claude.ai you can't see the team's answers, and yours aren't saved here. They're kept in this browser; when you're done, send them as a message.",
   "bNoIdentity": "You can see the team's answers, but claude.ai doesn't identify you on this page, so yours aren't saved here. They're kept in this browser; when you're done, send them as a message.",
   "bNoWrite": "You can see the team's answers, but your access doesn't let you save your own. They're kept in this browser; when you're done, send them as a message.",
   "bRejected": "Your access to this page doesn't let you save answers. Yours are kept in this browser; when you're done, send them as a message.",
+  "bLocal": "This page is a file that's passed from hand to hand. Your answers are kept in this browser: when you're done, save a copy of the file with your answers and send it to whoever comes next, or to whoever collects the answers.",
+  "whoLocal": "Your answers stay in this browser",
+  "usedLocal": "Answers stay in your browser until you save a copy of the file: whoever receives it sees the answers of everyone who answered before, with names.",
+  "stLocalFile": "Kept in this browser. When you're done, save a copy of the file at the end of the page.",
+  "sendPLocal": "Write your name and save a copy of the file: it holds your answers and those of everyone who answered before you. Send it to whoever comes next, or to whoever collects the answers. If you prefer, make the code instead: one line with just your answers, to paste into a message.",
+  "sendFile": "Save a copy with the answers", "sendFileDone": "Saved as «{file}». Send it to whoever comes next, or to whoever collects the answers.",
+  "impHLocal": "Add other people's answers", "impPLocal": "Pick the copies of the file people sent back, or paste a code. The answers join the ones you see here, in this browser, and go into the copies you save.",
+  "impFileL": "Copies of the file", "impFileBad": "No answers to this questionnaire in: {files}.",
+  "copyPLocal": "The answers you see here, with names, compressed into a single line of letters and digits that chats and email can't spoil. To read them back, paste it into «Add other people's answers» in another copy of this file, or into a chat with Claude.",
   "sendGo": "Send your answers",
   "sendH": "Send your answers", "sendP": "Your answers aren't saved on this page. Write your name and make the code: a single line that holds all your answers. Paste it into a message to whoever shared the page with you, by email or in a chat, and they'll add your answers to the team's under your name.",
   "sendNameL": "Your name", "sendNamePh": "First and last name", "sendB": "Make the code", "sendCopy": "Copy the code",
@@ -345,7 +367,7 @@ const UI = /*UI-START*/{
 const C = CONFIG;
 const LANGS = C.languages && C.languages.length ? C.languages : ["en"];
 const KEY = C.id || "questionnaire";
-const LS_KEY = KEY + ":answers", LANG_KEY = KEY + ":lang", NAME_KEY = KEY + ":name", GID_KEY = KEY + ":gid";
+const LS_KEY = KEY + ":answers", LANG_KEY = KEY + ":lang", NAME_KEY = KEY + ":name", GID_KEY = KEY + ":gid", PEOPLE_KEY = KEY + ":people";
 const GROUPS = {}; for (const g of C.groups || []) GROUPS[g.key] = g.label;
 // Kinds: "decision" (a recommendation: yes / different / not sure), "choice" (the config's own options), "open" (a written answer).
 const QS = C.questions.map(q => Object.assign({}, q, {kind: q.kind || (q.options ? "choice" : "decision")}));
@@ -355,6 +377,7 @@ const S = {
   lang: LANGS[0],
   db: null, user: null, myId: null, me: null,
   canSave: false, isOwner: false,
+  local: false, storageOk: true, unsaved: false,   // local: opened as a file, outside claude.ai
   gid: null, imp: null,   // this browser's id for answers sent as a message; a pasted message waiting to be added
   responses: {},          // uid -> doc body
   mine: {answers: {}, extra: null},
@@ -422,7 +445,7 @@ function renderIntro() {
   const lede = ct("lede"); $("#lede").textContent = lede; $("#lede").hidden = !lede;
   const meta = $("#meta"); meta.replaceChildren();
   for (const k of ["purpose", "from", "to", "used"]) {
-    const v = ct(k) || (k === "used" ? t("usedDefault") : "");
+    const v = ct(k) || (k === "used" ? t(S.local ? "usedLocal" : "usedDefault") : "");
     if (v) meta.append(el("dt", null, t(k + "L")), el("dd", null, v));
   }
   // Context is the questionnaire author's own HTML (links to the material it is about).
@@ -524,7 +547,10 @@ function renderQuestions() {
   $("#banner-go").addEventListener("click", goSend);
   $("#send-make").addEventListener("click", onSendMake);
   $("#send-copy").addEventListener("click", onSendCopy);
-  $("#send-name").addEventListener("input", e => { try { localStorage.setItem(NAME_KEY, e.target.value); } catch (_) {} });
+  $("#send-name").addEventListener("input", e => { try { localStorage.setItem(NAME_KEY, e.target.value); } catch (_) {} if (S.local) renderWho(); });
+  $("#send-file").addEventListener("click", onSendFile);
+  $("#imp-files").addEventListener("change", onImpFiles);
+  addEventListener("beforeunload", e => { if (S.local && !S.storageOk && S.unsaved) { e.preventDefault(); e.returnValue = ""; } });
   $("#imp-read").addEventListener("click", onImpRead);
   $("#imp-save").addEventListener("click", onImpSave);
   $("#imp-text").addEventListener("input", () => { S.imp = null; $("#imp-save").hidden = true; say($("#imp-status")); });
@@ -750,7 +776,7 @@ function renderStatus() {
   }
 }
 function scheduleSave(ms) {
-  if (!S.canSave) { saveLocal(); markAll("stLocal"); staleSend(); return; }
+  if (!S.canSave) { saveLocal(); markAll(S.local ? "stLocalFile" : "stLocal"); staleSend(); S.unsaved = true; return; }
   clearTimeout(S.timer); markAll("stSaving");
   S.timer = setTimeout(flush, ms);
 }
@@ -809,6 +835,7 @@ function goLocal(key) { S.canSave = false; setBanner(key, "warn", true); $("#sen
 function renderWho() {
   const who = $("#who"); who.replaceChildren();
   if (S.who === "loading") who.append(el("span", null, t("loading")));
+  else if (S.who === "local") { const n = oneLine($("#send-name").value); who.append(el("span", null, n ? t("whoAs", {name: n}) : t("whoLocal"))); }
   else if (S.who === "out") who.append(el("span", null, t("whoOut")));
   else if (S.me && S.myId) { const img = document.createElement("img"); img.alt = ""; img.src = S.me.avatarUrl; who.append(img, el("span", null, t("whoAs", {name: S.me.name || t("whoYou")}))); }
   else who.append(el("span", null, t("whoGuest")));
@@ -827,7 +854,8 @@ async function resolveProfiles() {
 }
 function nameOf(uid) {
   if (uid === "you" || isMe(uid)) return t("you");
-  if (isGuest(uid)) { const d = S.responses[uid]; return ((d && typeof d.guestName === "string" && d.guestName.trim()) || t("someone")) + " · " + t("guestTag"); }
+  // On claude.ai a name from a code is marked as such; in a file everyone's answers travel that way, so no mark.
+  if (isGuest(uid)) { const d = S.responses[uid]; return ((d && typeof d.guestName === "string" && d.guestName.trim()) || t("someone")) + (S.local ? "" : " · " + t("guestTag")); }
   const p = S.profiles[uid]; const d = S.responses[uid];
   return (p && p.name) || (d && typeof d.exportedName === "string" && d.exportedName.trim()) || t("someone");
 }
@@ -1123,28 +1151,91 @@ async function onSendMake() {
   const out = $("#send-out"); out.value = await encodeAnswers(packAnswers(name, answers, extra)); out.hidden = false;
   $("#send-copy").hidden = false; say($("#send-copied")); say(st, "sendReady");
 }
+const slug = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+function onSendFile() {
+  const st = $("#send-status"); const name = oneLine($("#send-name").value).slice(0, 80);
+  if (!name) { say(st, "sendNeedName", null, true); $("#send-name").focus(); return; }
+  const b = bundle();
+  if (!b.p.length) { say(st, "sendNeedAnswer", null, true); return; }
+  // Safe inside a script: no "<" (so nothing can close the script element) and no "*/" (so the markers stay unique);
+  // both are valid JSON escapes.
+  const json = JSON.stringify(b).replace(/</g, "\\u003c").replace(/\*\//g, "*\\/").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+  const html = PRISTINE.replace(/\/\*DATA-START\*\/[\s\S]*?\/\*DATA-END\*\//, () => "/*DATA-START*/" + json + "/*DATA-END*/");
+  const file = KEY + "-" + (slug(name) || "risposte") + ".html";
+  const url = URL.createObjectURL(new Blob([html], {type: "text/html"}));
+  const a = document.createElement("a"); a.href = url; a.download = file; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  S.unsaved = false; say(st, "sendFileDone", {file});
+}
 function onSendCopy() { const out = $("#send-out"); copyOut(out.value, out, $("#send-copied"), true); }
 async function onImpRead() {
   const st = $("#imp-status"); const save = $("#imp-save"); S.imp = null; save.hidden = true;
   let d = {error: "impBad"}; try { d = await decodeAnswers($("#imp-text").value); } catch (_) {}
   const c = d.error ? d : cleanPayload(d.p);
+  say($("#imp-status2"));
   if (c.error) { say(st, c.error, null, true); return; }
-  const todo = c.entries.filter(e => e.replace || !S.responses[e.docId]);
-  if (c.many) {
-    const vars = {n: c.entries.length, names: todo.map(e => e.name).join(", ")};
+  planImport(c.entries, c.many);
+}
+// On claude.ai a sender's own code replaces what they sent before and a copy of everyone only adds who's missing.
+// In a file, the newer copy of each person wins, since copies come back from many hands.
+function planImport(entries, many) {
+  const st = $("#imp-status"); const save = $("#imp-save");
+  const newer = e => { const old = S.responses[e.docId]; return !old || String(e.body.updatedAt || "") > String(old.updatedAt || ""); };
+  const todo = entries.filter(e => S.local ? newer(e) : (e.replace || !S.responses[e.docId]));
+  if (many || !todo.length) {
+    const vars = {n: entries.length, names: todo.map(e => e.name).join(", ")};
     if (!todo.length) { say(st, "impBundleNone", vars); return; }
-    say(st, todo.length < c.entries.length ? "impBundleSome" : "impBundle", vars); say(save, "impSave");
+    say(st, todo.length < entries.length ? "impBundleSome" : "impBundle", vars); say(save, "impSave");
   } else {
-    const e = c.entries[0]; const exists = !!S.responses[e.docId];
+    const e = entries[0]; const exists = !!S.responses[e.docId];
     say(st, exists ? "impPreviewUpd" : "impPreview", {name: e.name, n: Object.keys(e.body.answers).length, total: QS.length});
     say(save, exists ? "impUpdate" : "impSave");
   }
   S.imp = todo; save.hidden = false; save.focus();
 }
+// Copies of the file that came back: each carries its answers in CARRIED; a pasted code inside works too.
+async function onImpFiles(ev) {
+  const files = [...ev.target.files]; ev.target.value = "";
+  const st2 = $("#imp-status2"); S.imp = null; $("#imp-save").hidden = true; say($("#imp-status")); say(st2);
+  const entries = [], bad = [];
+  for (const f of files) {
+    let data = null;
+    try {
+      const text = await f.text();
+      const m = /\/\*DATA-START\*\/([\s\S]*?)\/\*DATA-END\*\//.exec(text);
+      if (m) data = JSON.parse(m[1]);
+      if (!data) { const d = await decodeAnswers(text); if (d.p) data = d.p; }
+    } catch (_) {}
+    const c = data ? cleanPayload(data) : {error: "impBad"};
+    if (c.error) { bad.push(f.name); continue; }
+    for (const x of c.entries) {
+      const i = entries.findIndex(y => y.docId === x.docId);
+      if (i < 0) entries.push(x); else if (String(x.body.updatedAt || "") > String(entries[i].body.updatedAt || "")) entries[i] = x;
+    }
+  }
+  if (bad.length) say(st2, "impFileBad", {files: bad.join(", ")}, true);
+  if (entries.length) planImport(entries, true);
+}
+function readPeople() { try { const v = JSON.parse(localStorage.getItem(PEOPLE_KEY) || "null"); return v && typeof v === "object" ? v : {}; } catch (_) { return {}; } }
+// Outside claude.ai, the people this page shows: what the file carries, then what was added in this browser; newer wins.
+function loadPeople() {
+  const people = {};
+  const take = (id, body) => { const old = people[id]; if (body && body.answers && (!old || String(body.updatedAt || "") > String(old.updatedAt || ""))) people[id] = body; };
+  if (CARRIED) { const c = cleanPayload(CARRIED); if (!c.error) for (const e of c.entries) take(e.docId, e.body); }
+  for (const [id, body] of Object.entries(readPeople())) take(id, body);
+  S.responses = people;
+}
 async function onImpSave() {
   const todo = S.imp; if (!todo || !todo.length) return;
   const st = $("#imp-status"); const save = $("#imp-save"); save.disabled = true;
   const done = [];
+  if (S.local) {
+    const store = readPeople();
+    for (const e of todo) { store[e.docId] = e.body; S.responses[e.docId] = e.body; done.push(e.name); }
+    try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(store)); } catch (_) {}
+    S.imp = null; save.hidden = true; $("#imp-text").value = ""; say(st, "impSaved", {name: done.join(", ")});
+    S.unsaved = true; save.disabled = false; await refreshAll(); return;
+  }
   try {
     for (const e of todo) { await S.db.doc("responses/" + e.docId).set(e.body); done.push(e.name); }
     S.imp = null; save.hidden = true; $("#imp-text").value = ""; say(st, "impSaved", {name: done.join(", ")});
@@ -1162,6 +1253,15 @@ function trackBar() {
   const set = () => document.documentElement.style.setProperty("--bar-h", bar.offsetHeight + "px");
   set(); try { new ResizeObserver(set).observe(bar); } catch (_) { addEventListener("resize", set); }
 }
+// Opened as a file (or on any site other than claude.ai): answers live in this browser and travel in saved copies.
+function bootLocal() {
+  S.local = true; S.who = "local";
+  try { localStorage.setItem(KEY + ":probe", "1"); localStorage.removeItem(KEY + ":probe"); } catch (_) { S.storageOk = false; }
+  for (const [sel, key] of [["#send .body", "sendPLocal"], ["#imp-h", "impHLocal"], ["#import .body", "impPLocal"], ["#copy-p", "copyPLocal"]]) $(sel).dataset.i18n = key;
+  $("#send-file").hidden = false; $("#import").hidden = false; $("#imp-files-row").hidden = false;
+  loadPeople(); loadLocal(); goLocal("bLocal"); applyLang();
+  refreshAll().then(enableAnim);
+}
 async function boot() {
   loadLang(); renderLangs(); renderQuestions(); renderToc(); applyLang(); trackBar();
   setDrawer(false);
@@ -1170,7 +1270,7 @@ async function boot() {
   refreshSummary(); refreshExtra(); for (const q of QS) refreshCard(q.id);
   try { $("#send-name").value = localStorage.getItem(NAME_KEY) || ""; const g = localStorage.getItem(GID_KEY); if (g) S.gid = g; } catch (_) {}
   const c = window.claude;
-  if (!c || typeof c.use !== "function") { S.who = "out"; renderWho(); loadLocal(); goLocal("bNoClaude"); refreshAll().then(enableAnim); return; }
+  if (!c || typeof c.use !== "function") { bootLocal(); return; }
   const [db, user] = await Promise.all([c.use("db"), c.use("user")]);
   S.db = db; S.user = user;
   S.me = user ? await user.me() : null; S.myId = (S.me && S.me.id) || null;

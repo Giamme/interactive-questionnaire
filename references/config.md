@@ -106,6 +106,8 @@ Someone the page can't save for sends a one-line code: `IQ3.` followed by letter
 
 «Copy all answers» makes the same kind of line holding everyone on the page: `{"v": 3, "q": "<config id>", "t": "<time>", "p": [["<user id or guest-<browser>>", "Name", "<saved at>", {"Q7": ["yes"]}, "note?"], …]}`. Pasted into the page by the owner, it adds the people the page doesn't have (a user id gets its own document with `exportedName`, a guest gets `guest-<browser>` with `guestName`) and leaves everyone else as they are.
 
+A copy of the file version (`build.py --standalone`) saved with «Save a copy with the answers» carries the same v3 object, as plain JSON, in the page's script between `/*DATA-START*/` and `/*DATA-END*/` (`<` and `*/` are escaped inside it, so nothing can end the script or the markers early). A fresh file holds `null` there. The page shows those people's answers, and `scripts/import_answers.py` reads them from the file.
+
 Earlier forms are still read: `IQ2` (Crockford base32 in groups between two `IQ2` lines) and `IQ1.z.<base64url>.END`.
 
 When the owner adds one person's code, or Claude does with `scripts/import_answers.py`, it becomes the document `responses/guest-<gid>`, with the same fields as above plus `guestName` (the name they typed) and `importedAt`. Only known question ids, valid picks and notes up to 4,000 characters are kept, and a code for another questionnaire is refused.

@@ -80,10 +80,11 @@ def main():
     for folder in a.docs:
         docs.update(load_docs(Path(folder)))
     names = json.loads(Path(a.names).read_text(encoding="utf-8")) if a.names else {}
+    mixed = any(not u.startswith("guest-") for u in docs)  # in a standalone file everyone is a guest: no mark then
     for u, d in docs.items():
         guest, exported = d.get("guestName"), d.get("exportedName")
         if u.startswith("guest-") and isinstance(guest, str) and guest.strip():
-            names[u] = f"{' '.join(guest.split())[:80]} ({t('guestTag')})"
+            names[u] = " ".join(guest.split())[:80] + (f" ({t('guestTag')})" if mixed else "")
         elif u not in names and isinstance(exported, str) and exported.strip():
             names[u] = " ".join(exported.split())[:80]  # the name a copy of everyone's answers carried
     order = sorted(docs, key=lambda u: (names.get(u, "~"), u))

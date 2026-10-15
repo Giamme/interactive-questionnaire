@@ -1,6 +1,6 @@
 # interactive-questionnaire
 
-A Claude Code skill that turns a set of questions into a **shareable questionnaire page on claude.ai**. Several people fill it in, one after another, and the page keeps every answer. Claude reads the answers back and summarizes them.
+A Claude Code skill that turns a set of questions into a **shareable questionnaire page on claude.ai**, or into **a single HTML file** for people who don't use claude.ai. Several people fill it in, one after another, and the page keeps every answer. Claude reads the answers back and summarizes them.
 
 The skill is built for decision rounds, where you have a recommendation and want the team to agree or say what instead. It also handles plain multiple choice and open questions.
 
@@ -53,6 +53,14 @@ Then ask Claude Code for a questionnaire, a survey or a decision round for your 
 5. The config travels inside the published page, so `scripts/extract_config.py` can get it back in a later session, to change the questions and republish without losing answers.
 
 [SKILL.md](SKILL.md) is the full workflow Claude follows.
+
+## Without claude.ai: one file to share
+
+```bash
+python3 -I scripts/build.py examples/team-agreements.json team.html --standalone
+```
+
+`team.html` opens in any browser, with no account and no server. Each person answers, then «Save a copy with the answers» downloads the file again with their answers and everyone's before them, to send to the next person or back to whoever collects. The collector adds the copies (or one-line codes) people send back in «Add other people's answers». `scripts/import_answers.py` and `scripts/summarize.py` read the answers straight out of a returned copy.
 
 ## Privacy
 
