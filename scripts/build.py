@@ -215,6 +215,9 @@ def main(argv):
     data = json.dumps(cfg, ensure_ascii=False, separators=(",", ":"))
     data = data.replace("</", "<\\/").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
     page = template.replace("__TITLE__", html.escape(cfg["title"]), 1)
+    if "<!--NOSCRIPT-->" not in page:
+        sys.exit("template.html has no noscript slot")
+    page = page.replace("<!--NOSCRIPT-->", noscript(cfg, builtin_ui(template)), 1)
     if CONFIG_SLOT not in page:
         sys.exit("template.html has no config slot")
     page = page.replace(CONFIG_SLOT, "/*CONFIG-START*/" + data + "/*CONFIG-END*/", 1)
@@ -240,6 +243,24 @@ def main(argv):
         preview = out_path.with_suffix(".preview.html")
         preview.write_text(document(page, cfg["languages"][0]), encoding="utf-8")
         print(f"wrote {preview} (for a local look only; publish {out_path.name})")
+
+
+def noscript(cfg: dict, ui: dict) -> str:
+    """What a viewer that doesn't run the page shows (a file preview, an attachment preview): the title, and to open
+    the file in a browser, in each of the questionnaire's languages. A browser that runs the page never shows it."""
+    own = cfg.get("ui") or {}
+    first = cfg["languages"][0]
+    heading = ((cfg.get("content") or {}).get(first) or {}).get("heading") or cfg["title"]
+    heading = heading.replace("{n}", str(len(cfg["questions"])))
+    lines = []
+    for lang in cfg["languages"]:
+        text = (own.get(lang) or {}).get("noScript") or (ui.get(lang) or {}).get("noScript") or ui["en"]["noScript"]
+        if all(text != t for _, t in lines):
+            lines.append((lang, text))
+    paras = "".join(f'<p lang="{html.escape(lang)}">{html.escape(text)}</p>' for lang, text in lines)
+    return ("<noscript><style>.page,.fab,.scrim{display:none!important}"
+            ".nojs{max-width:640px;margin:48px auto;padding-inline:16px;display:flex;flex-direction:column;gap:12px}</style>"
+            f'<div class="nojs"><h1>{html.escape(heading)}</h1>{paras}</div></noscript>')
 
 
 def document(page: str, lang: str) -> str:

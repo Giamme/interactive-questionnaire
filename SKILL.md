@@ -145,6 +145,7 @@ For people who don't use claude.ai, the same questionnaire is one HTML file. Ste
    - Whoever collects opens one copy and adds the others in «Add other people's answers», by picking the files or pasting one-line codes. For each person, the newest copy wins.
    - «Copy all answers» copies everything as one line, for a chat or for Claude.
    - Nothing is shared live: people see only the answers that reached them in a copy. A browser that can't keep data (a private window) loses answers on close unless a copy was saved, and the page warns before closing.
+   - It has to be opened in a browser. File previews (the Finder's, a mail or chat attachment's, an app's file viewer) don't run the page: there it shows only its title and asks to be opened in a browser.
    - The file loads its font from Google Fonts when online; offline it uses the system font.
 3. **Read the answers back** from the copies or codes the user gives you, saved in `questionnaire/answers/`:
 
