@@ -107,6 +107,7 @@ textarea.need{border-color:var(--warn)}
 .btn{font:inherit;font-size:14px;font-weight:600;border:1px solid var(--line);background:var(--sheet);color:var(--fg);border-radius:8px;padding:8px 14px;cursor:pointer}
 .btn:disabled{opacity:.45;cursor:default}
 .copyout{font-family:var(--mono);font-size:12px;min-height:160px}
+.copyout.code1{min-height:96px;word-break:break-all}
 /* Floating navigation: index (narrow screens), top, next unanswered, last. */
 .fab{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:column;gap:8px}
 .fab button{width:44px;height:44px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--sheet);color:var(--fg);display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow)}
@@ -210,7 +211,7 @@ textarea.need{border-color:var(--warn)}
     <label class="small" for="send-name" data-i18n="sendNameL"></label>
     <input class="field" id="send-name" type="text" autocomplete="name" maxlength="80" data-i18n-ph="sendNamePh">
     <div class="row"><button class="btn" type="button" id="send-make" data-i18n="sendB"></button><span class="status" id="send-status" aria-live="polite"></span></div>
-    <textarea class="copyout" id="send-out" readonly hidden></textarea>
+    <textarea class="copyout code1" id="send-out" readonly hidden></textarea>
     <div class="row"><button class="btn" type="button" id="send-copy" data-i18n="sendCopy" hidden></button><span class="status" id="send-copied" aria-live="polite"></span></div>
   </section>
 
@@ -278,15 +279,14 @@ const UI = /*UI-START*/{
   "bNoWrite": "Vedi le risposte del team, ma il tuo accesso non ti permette di salvare le tue. Restano in questo browser: quando hai finito, inviale come messaggio.",
   "bRejected": "Il tuo accesso a questa pagina non ti permette di salvare le risposte. Le tue restano in questo browser: quando hai finito, inviale come messaggio.",
   "sendGo": "Invia le tue risposte",
-  "sendH": "Invia le tue risposte", "sendP": "Le tue risposte non si salvano in questa pagina. Scrivi il tuo nome e prepara il messaggio: contiene le tue risposte e un codice. Mandalo a chi ti ha condiviso la pagina, per email o in chat, e le aggiungerà a quelle del team con il tuo nome.",
-  "sendNameL": "Il tuo nome", "sendNamePh": "Nome e cognome", "sendB": "Prepara il messaggio", "sendCopy": "Copia il messaggio",
-  "sendReady": "Il messaggio è pronto: copialo e mandalo a chi ti ha condiviso la pagina.", "sendStale": "Hai cambiato le risposte: prepara di nuovo il messaggio.",
-  "sendNeedName": "Scrivi il tuo nome.", "sendNeedAnswer": "Rispondi almeno a una domanda, poi prepara il messaggio.",
-  "sendMsgHead": "{title}: le risposte di {name}", "sendCodeL": "Codice per aggiungere queste risposte alla pagina (copialo tutto, fino all’ultima riga):",
-  "impH": "Aggiungi risposte arrivate per messaggio", "impP": "Solo tu vedi questa parte. Incolla il messaggio di chi non poteva salvare qui: le sue risposte si aggiungono a quelle del team con il suo nome.",
-  "impPh": "Incolla qui il messaggio", "impRead": "Leggi il messaggio", "impSave": "Aggiungi le risposte", "impUpdate": "Sostituisci le sue risposte",
+  "sendH": "Invia le tue risposte", "sendP": "Le tue risposte non si salvano in questa pagina. Scrivi il tuo nome e prepara il codice: una sola riga che contiene tutte le tue risposte. Incollala in un messaggio a chi ti ha condiviso la pagina, per email o in chat, e le aggiungerà a quelle del team con il tuo nome.",
+  "sendNameL": "Il tuo nome", "sendNamePh": "Nome e cognome", "sendB": "Prepara il codice", "sendCopy": "Copia il codice",
+  "sendReady": "Il codice è pronto: copialo e mandalo a chi ti ha condiviso la pagina.", "sendStale": "Hai cambiato le risposte: prepara di nuovo il codice.",
+  "sendNeedName": "Scrivi il tuo nome.", "sendNeedAnswer": "Rispondi almeno a una domanda, poi prepara il codice.",
+  "impH": "Aggiungi risposte arrivate per messaggio", "impP": "Solo tu vedi questa parte. Incolla il codice di chi non poteva salvare qui, da solo o con tutto il messaggio: le sue risposte si aggiungono a quelle del team con il suo nome.",
+  "impPh": "Incolla qui il codice o il messaggio", "impRead": "Leggi il codice", "impSave": "Aggiungi le risposte", "impUpdate": "Sostituisci le sue risposte",
   "impPreview": "{name}: domande con risposta {n} su {total}.", "impPreviewUpd": "{name}: domande con risposta {n} su {total}. Ci sono già sue risposte arrivate per messaggio: queste le sostituiscono.",
-  "impSaved": "Aggiunte le risposte di {name}.", "impNone": "Il messaggio non contiene risposte.", "impBad": "Nel messaggio non trovo un codice. Incolla tutto il messaggio, dalla prima all’ultima riga IQ2.", "impDamaged": "Il codice nel messaggio è incompleto o alterato. Chiedi a chi l’ha mandato di copiarlo di nuovo dalla pagina e rimandarlo.", "impOther": "Questo codice è di un altro questionario.",
+  "impSaved": "Aggiunte le risposte di {name}.", "impNone": "Il messaggio non contiene risposte.", "impBad": "Non trovo un codice. Incolla la riga che inizia con IQ3.", "impDamaged": "Il codice è incompleto o alterato. Chiedi a chi l’ha mandato di copiarlo di nuovo dalla pagina e rimandarlo.", "impOther": "Questo codice è di un altro questionario.",
   "guestTag": "via messaggio",
   "bRevoked": "Questa pagina non raggiunge più le risposte condivise.", "bStopped": "Le risposte condivise non si aggiornano più. Ricarica la pagina per ricollegarti.",
   "loading": "Caricamento…", "whoAs": "Rispondi come {name}", "whoYou": "te", "whoGuest": "Rispondi come ospite", "whoOut": "Accesso non effettuato",
@@ -326,15 +326,14 @@ const UI = /*UI-START*/{
   "bNoWrite": "You can see the team's answers, but your access doesn't let you save your own. They're kept in this browser; when you're done, send them as a message.",
   "bRejected": "Your access to this page doesn't let you save answers. Yours are kept in this browser; when you're done, send them as a message.",
   "sendGo": "Send your answers",
-  "sendH": "Send your answers", "sendP": "Your answers aren't saved on this page. Write your name and make the message: it holds your answers and a code. Send it to whoever shared the page with you, by email or in a chat, and they'll add it to the team's answers under your name.",
-  "sendNameL": "Your name", "sendNamePh": "First and last name", "sendB": "Make the message", "sendCopy": "Copy the message",
-  "sendReady": "The message is ready: copy it and send it to whoever shared the page with you.", "sendStale": "You changed your answers: make the message again.",
-  "sendNeedName": "Write your name.", "sendNeedAnswer": "Answer at least one question, then make the message.",
-  "sendMsgHead": "{title}: answers from {name}", "sendCodeL": "Code to add these answers to the page (copy all of it, down to the last line):",
-  "impH": "Add answers sent as a message", "impP": "Only you see this part. Paste the message from someone who couldn't save here: their answers join the team's under their name.",
-  "impPh": "Paste the message here", "impRead": "Read the message", "impSave": "Add the answers", "impUpdate": "Replace their answers",
+  "sendH": "Send your answers", "sendP": "Your answers aren't saved on this page. Write your name and make the code: a single line that holds all your answers. Paste it into a message to whoever shared the page with you, by email or in a chat, and they'll add your answers to the team's under your name.",
+  "sendNameL": "Your name", "sendNamePh": "First and last name", "sendB": "Make the code", "sendCopy": "Copy the code",
+  "sendReady": "The code is ready: copy it and send it to whoever shared the page with you.", "sendStale": "You changed your answers: make the code again.",
+  "sendNeedName": "Write your name.", "sendNeedAnswer": "Answer at least one question, then make the code.",
+  "impH": "Add answers sent as a message", "impP": "Only you see this part. Paste the code from someone who couldn't save here, on its own or with the whole message: their answers join the team's under their name.",
+  "impPh": "Paste the code or the message here", "impRead": "Read the code", "impSave": "Add the answers", "impUpdate": "Replace their answers",
   "impPreview": "{name}: {n} of {total} answered.", "impPreviewUpd": "{name}: {n} of {total} answered. Answers they sent before are already here; these replace them.",
-  "impSaved": "Added the answers from {name}.", "impNone": "The message holds no answers.", "impBad": "I can't find a code in the message. Paste the whole message, from the first IQ2 line to the last.", "impDamaged": "The code in the message is incomplete or altered. Ask the sender to copy it again from the page and send it again.", "impOther": "This code belongs to a different questionnaire.",
+  "impSaved": "Added the answers from {name}.", "impNone": "The message holds no answers.", "impBad": "I can't find a code. Paste the line that starts with IQ3.", "impDamaged": "The code is incomplete or altered. Ask the sender to copy it again from the page and send it again.", "impOther": "This code belongs to a different questionnaire.",
   "guestTag": "via message",
   "bRevoked": "This page can no longer reach the shared answers.", "bStopped": "The shared answers stopped updating. Reload the page to reconnect.",
   "loading": "Loading…", "whoAs": "Answering as {name}", "whoYou": "you", "whoGuest": "Answering as a guest", "whoOut": "Not signed in",
@@ -943,23 +942,34 @@ function copyOut(text, out, st, keep) {
 function onCopy() { copyOut(asText(), $("#copyout"), $("#copy-status")); }
 
 // ---------- answers sent as a message ----------
-// Chat apps and mail clients reformat what they carry: underscores turn into italics, dashes merge, long words get
-// broken with invisible characters, and a line can gain a capital or a quote mark. So the code uses only letters and
-// digits, in either case (Crockford base32, which has no I, L, O or U), set in short groups between two «IQ2» lines.
-// Reading it back drops everything else, and a CRC32 tells a damaged code from a good one.
-// Inside: one byte (1 = JSON, 2 = raw-deflated JSON), the data, then the CRC32 of both, big-endian.
-// scripts/import_answers.py reads the same code. «IQ1» is the first, base64url form; it is still read.
-const B32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+// The code is one line: «IQ3.» and then letters and digits only (base62), so nothing in it reads as formatting to a chat
+// app or a mail client. Inside: one byte (1 = JSON, 2 = raw-deflated JSON), the data, and a CRC32 of both, big-endian;
+// every 8 bytes become 11 characters. Reading it back skips anything a chat put inside the line (spaces, line breaks,
+// quote marks, invisible characters) by joining the runs of letters and digits after «IQ3» until the CRC32 matches,
+// so a damaged code is refused, never read wrong. scripts/import_answers.py reads the same code.
+// Older forms are still read: «IQ2» (base32 between two IQ2 lines) and «IQ1.z.….END» (base64url).
+const B62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const B62_LEN = [0, 2, 3, 5, 6, 7, 9, 10, 11];  // characters for 0 to 8 bytes
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
 function crc32(bytes) { let c = 0xFFFFFFFF; for (const b of bytes) c = CRC_T[(c ^ b) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
-function b32(bytes) {
-  let out = "", bits = 0, val = 0;
-  for (const b of bytes) { val = (val << 8) | b; bits += 8; while (bits >= 5) { bits -= 5; out += B32[(val >>> bits) & 31]; } val &= (1 << bits) - 1; }
-  return bits ? out + B32[(val << (5 - bits)) & 31] : out;
+function b62(bytes) {
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 8) {
+    const chunk = bytes.subarray(i, i + 8); let n = 0n, s = "";
+    for (const b of chunk) n = (n << 8n) | BigInt(b);
+    for (let k = 0; k < B62_LEN[chunk.length]; k++) { s = B62[Number(n % 62n)] + s; n /= 62n; }
+    out += s;
+  }
+  return out;
 }
-function unb32(s) {
-  const out = []; let bits = 0, val = 0;
-  for (const ch of s) { const i = B32.indexOf(ch); if (i < 0) return null; val = (val << 5) | i; bits += 5; if (bits >= 8) { bits -= 8; out.push((val >>> bits) & 255); } val &= (1 << bits) - 1; }
+function unb62(s) {
+  const out = [];
+  for (let i = 0; i < s.length; i += 11) {
+    const part = s.slice(i, i + 11); const len = B62_LEN.indexOf(part.length); if (len < 1) return null;
+    let n = 0n; for (const ch of part) { const d = B62.indexOf(ch); if (d < 0) return null; n = n * 62n + BigInt(d); }
+    if (n >> BigInt(8 * len)) return null;
+    for (let k = len - 1; k >= 0; k--) out.push(Number((n >> BigInt(8 * k)) & 255n));
+  }
   return new Uint8Array(out);
 }
 async function pipe(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
@@ -969,26 +979,41 @@ async function encodeAnswers(payload) {
   try { if (typeof CompressionStream === "function") { data = await pipe(raw, new CompressionStream("deflate-raw")); kind = 2; } } catch (_) { kind = 1; data = raw; }
   const pack = new Uint8Array(data.length + 5); pack[0] = kind; pack.set(data, 1);
   new DataView(pack.buffer).setUint32(data.length + 1, crc32(pack.subarray(0, data.length + 1)));
-  const groups = b32(pack).match(/.{1,5}/g); const lines = [];
-  for (let i = 0; i < groups.length; i += 8) lines.push(groups.slice(i, i + 8).join(" "));
-  return "IQ2\n" + lines.join("\n") + "\nIQ2";
+  return "IQ3." + b62(pack);
 }
-async function unpack(span) {
-  const clean = span.replace(/[^0-9A-Za-z]/g, "").toUpperCase().replace(/O/g, "0").replace(/[IL]/g, "1");
-  const pack = unb32(clean); if (!pack || pack.length < 6) return null;
+// A checked pack: kind byte, data, CRC32. Returns the payload, or null when the bytes don't hold one.
+async function openPack(pack) {
+  if (!pack || pack.length < 6) return null;
   const n = pack.length - 4;
-  if (new DataView(pack.buffer).getUint32(n) !== crc32(pack.subarray(0, n))) return null;
+  if (new DataView(pack.buffer, pack.byteOffset).getUint32(n) !== crc32(pack.subarray(0, n))) return null;
   let data = pack.subarray(1, n);
   if (pack[0] === 2) data = await pipe(data, new DecompressionStream("deflate-raw"));
   else if (pack[0] !== 1) return null;
   return JSON.parse(new TextDecoder().decode(data));
 }
-// The code may sit anywhere in a pasted message, which may hold «IQ2» elsewhere too: try each pair of marks, last first.
+const B32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+function unb32(s) {
+  const out = []; let bits = 0, val = 0;
+  for (const ch of s) { const i = B32.indexOf(ch); if (i < 0) return null; val = (val << 5) | i; bits += 5; if (bits >= 8) { bits -= 8; out.push((val >>> bits) & 255); } val &= (1 << bits) - 1; }
+  return new Uint8Array(out);
+}
 async function decodeAnswers(text) {
   text = String(text);
+  let seen = false;
+  for (const m of text.matchAll(/IQ3/gi)) {
+    seen = true;
+    const runs = text.slice(m.index + 3).split(/[^0-9A-Za-z]+/).filter(Boolean);
+    let joined = "";
+    for (const run of runs.slice(0, 600)) {
+      joined += run; if (joined.length > 40000) break;
+      if (!B62_LEN.includes(joined.length % 11 || 11)) continue;
+      try { const p = await openPack(unb62(joined)); if (p) return {p}; } catch (_) {}
+    }
+  }
   const marks = [...text.matchAll(/IQ2/gi)].map(m => m.index);
   for (let k = marks.length - 1; k > 0; k--) {
-    try { const p = await unpack(text.slice(marks[k - 1] + 3, marks[k])); if (p) return {p}; } catch (_) {}
+    const clean = text.slice(marks[k - 1] + 3, marks[k]).replace(/[^0-9A-Za-z]/g, "").toUpperCase().replace(/O/g, "0").replace(/[IL]/g, "1");
+    try { const p = await openPack(unb32(clean)); if (p) return {p}; } catch (_) {}
   }
   const old = /IQ1\.([zj])\.([A-Za-z0-9_-]+)\.END/.exec(text.replace(/[\s\u00AD\u200B-\u200D\u2060\uFEFF]+/g, ""));
   if (old) {
@@ -999,13 +1024,28 @@ async function decodeAnswers(text) {
       return {p: JSON.parse(new TextDecoder().decode(bytes))};
     } catch (_) { return {error: "impDamaged"}; }
   }
-  return {error: marks.length ? "impDamaged" : "impBad"};
+  return {error: seen || marks.length ? "impDamaged" : "impBad"};
+}
+// The code carries the answers packed tight: {v: 2, q: id, g: browser, n: name, t: time, a: {Q7: [pick, note?]}, x: note?}.
+function packAnswers(name, answers, extra) {
+  const a = {};
+  for (const [id, x] of Object.entries(answers)) a[id] = (x.note || "").trim() ? [x.pick, x.note] : [x.pick];
+  const p = {v: 2, q: KEY, g: myGid(), n: name, t: now(), a};
+  if (extra) p.x = extra.note;
+  return p;
+}
+function unpackV2(p) {
+  const a = p.a && typeof p.a === "object" ? p.a : {};
+  const answers = {};
+  for (const [id, x] of Object.entries(a)) if (Array.isArray(x)) answers[id] = {pick: x[0], note: x[1] || "", at: p.t};
+  return {v: 1, q: p.q, gid: p.g, name: p.n, at: p.t, answers, extra: typeof p.x === "string" ? {note: p.x, at: p.t} : null};
 }
 // A pasted code is someone else's text: keep only known questions, valid picks and bounded notes.
 const AT_RE = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/;
 const cleanAt = v => typeof v === "string" && AT_RE.test(v) ? v : now();
 const cleanNote = v => typeof v === "string" ? v.slice(0, 4000) : "";
 function cleanPayload(p) {
+  if (p && typeof p === "object" && p.v === 2) p = unpackV2(p);
   if (!p || typeof p !== "object" || p.v !== 1) return {error: "impBad"};
   if (p.q !== KEY) return {error: "impOther"};
   const gid = typeof p.gid === "string" && /^[a-z0-9]{8,32}$/.test(p.gid) ? p.gid : null;
@@ -1048,12 +1088,7 @@ async function onSendMake() {
   for (const q of QS) { const a = myAnswer(q.id); if (hasAnswer(a)) answers[q.id] = a; }
   const extra = S.mine.extra && (S.mine.extra.note || "").trim() ? S.mine.extra : null;
   if (!Object.keys(answers).length && !extra) { say(st, "sendNeedAnswer", null, true); return; }
-  const code = await encodeAnswers({v: 1, q: KEY, gid: myGid(), name, answers, extra, at: now()});
-  const lines = [t("sendMsgHead", {title: ct("heading") || C.title, name}), ""];
-  for (const q of QS) if (answers[q.id]) lines.push(`${q.id} ${words(q).title}: ${answerText(q, answers[q.id])}`);
-  if (extra) lines.push(`${t("txtExtra")}: ${oneLine(extra.note)}`);
-  lines.push("", t("sendCodeL"), code);
-  const out = $("#send-out"); out.value = lines.join("\n"); out.hidden = false;
+  const out = $("#send-out"); out.value = await encodeAnswers(packAnswers(name, answers, extra)); out.hidden = false;
   $("#send-copy").hidden = false; say($("#send-copied")); say(st, "sendReady");
 }
 function onSendCopy() { const out = $("#send-out"); copyOut(out.value, out, $("#send-copied"), true); }

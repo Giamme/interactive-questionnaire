@@ -18,7 +18,7 @@ This skill makes one published Artifact page that a team answers in turn and tha
   - Floating buttons go to the top, to the next unanswered question and to the last question.
   - A sidebar lists every question with a tick for the viewer's own answers. On narrow screens it becomes a drawer.
 - **Filters, progress and a copy button:** filters for «not answered by me» and «not answered by anyone», a progress count, and «Copy all answers» as plain text.
-- **Answers by message for anyone the page can't save for:** people with view-only access, people claude.ai doesn't identify on the page, and visitors without a Claude account. They answer as usual, the page keeps their answers in their browser, and «Send your answers» turns them into a message with a code. The owner pastes it into «Add answers sent as a message» at the end of the page, and the answers join the team's under the sender's name.
+- **Answers by message for anyone the page can't save for:** people with view-only access, people claude.ai doesn't identify on the page, and visitors without a Claude account. They answer as usual, the page keeps their answers in their browser, and «Send your answers» turns them into a one-line code they send in a message. The owner pastes it into «Add answers sent as a message» at the end of the page, and the answers join the team's under the sender's name.
 
 `<skill>` below means this skill's folder (the one holding this file). Keep work files in the session scratchpad, under `questionnaire/`.
 
@@ -85,7 +85,7 @@ Then tell the user who can do what, because claude.ai's share levels decide it, 
 - **Who saves straight into the page:** the owner; Editors; and, on a Team or Enterprise plan, Contributors and members of the organization who open it by link. On a personal plan everyone else is outside the organization, so to let a teammate save, invite them by email as Editor (if the Share menu offers it) and leave the page without a public link: an outside Editor drops to view-only while a public link is on. Editors can also change the page itself.
 - **Who reads the team's answers but can't save:** Viewers, Commenters, and every signed-in person from outside the organization. The page tells them, keeps their answers in their browser, and offers «Send your answers».
 - **Who can't see anything stored:** visitors who aren't signed in. They need the "Anyone with the link" share to open the page at all; they answer and send their answers as a message, without seeing the team's.
-- **Answers that arrive by message:** the owner pastes the whole message into «Add answers sent as a message» at the end of the page (only the owner sees that part), or pastes it into the chat for Claude (step 6).
+- **Answers that arrive by message:** the owner pastes the code, or the whole message holding it, into «Add answers sent as a message» at the end of the page (only the owner sees that part), or pastes it into the chat for Claude (step 6).
 
 So the user picks one: invite teammates as Editors with no public link, and everyone saves directly; or keep a public link, and everyone but the owner sends answers by message.
 

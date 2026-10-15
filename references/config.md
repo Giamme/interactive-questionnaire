@@ -98,19 +98,12 @@ The values of `pick` depend on the kind:
 
 ### Answers sent as a message
 
-Someone the page can't save for sends a message that ends in a code: a line `IQ2`, groups of five letters and digits, and a closing line `IQ2`. Chat apps and mail clients reformat text (underscores turn into italics, dashes merge, quote marks and invisible characters appear, case changes), so the code is built to survive that:
+Someone the page can't save for sends a one-line code: `IQ3.` followed by letters and digits only, so a chat app or mail client finds nothing in it to format. A message with a few notes makes a line of a few hundred characters.
 
-- **Letters and digits only,** in Crockford base32 (`0-9` and `A-Z` without `I`, `L`, `O` and `U`). Reading it back drops every other character, ignores case, and takes `O` as `0` and `I` or `L` as `1`.
-- **A checksum:** the decoded bytes are one kind byte (`1` JSON, `2` raw-deflated JSON), the data, and a big-endian CRC32 of both. A code that lost or changed a character is refused as damaged, never read wrong.
-- **Pairs of marks are tried from the end,** because `IQ2` can also appear in the readable part of a message.
+- **Inside:** one kind byte (`1` JSON, `2` raw-deflated JSON), the data, and a big-endian CRC32 of both. Every 8 bytes become 11 base62 characters (`0-9A-Za-z`); a shorter last block uses 2, 3, 5, 6, 7, 9 or 10 characters for 1 to 7 bytes.
+- **Reading it back** joins the runs of letters and digits after `IQ3` until the CRC32 matches, so line breaks, quote marks, formatting and invisible characters a chat put inside the line are skipped. A code that lost or changed a character, or changed case, is refused as damaged, never read wrong.
+- **The JSON is packed tight:** `{"v": 2, "q": "<config id>", "g": "<16 letters and digits>", "n": "Their name", "t": "<time>", "a": {"Q7": ["yes"], "Q9": ["answer", "their text"]}, "x": "the «Anything else?» note"}`. `g` is the sender's browser, so a second code from the same person replaces the first.
 
-The JSON inside is:
-
-```json
-{"v": 1, "q": "<config id>", "gid": "<16 letters and digits>", "name": "Their name",
- "answers": {"Q7": {"pick": "yes", "note": "", "at": "…"}}, "extra": null, "at": "…"}
-```
-
-`gid` is the sender's browser, so a second message from the same person replaces the first. The first form of the code, `IQ1.z.<base64url>.END`, is still read.
+Earlier forms are still read: `IQ2` (Crockford base32 in groups between two `IQ2` lines) and `IQ1.z.<base64url>.END`.
 
 When the owner adds it, or Claude does with `scripts/import_answers.py`, it becomes the document `responses/guest-<gid>`, with the same fields as above plus `guestName` (the name they typed) and `importedAt`. Only known question ids, valid picks and notes up to 4,000 characters are kept, and a code for another questionnaire is refused.

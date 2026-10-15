@@ -4,12 +4,12 @@
     python3 -I import_answers.py (--config CONFIG.json | --page PAGE.html)
                                  MESSAGE.txt [MESSAGE2.txt …] --out DIR [--writes WRITES.json]
 
-A message holds a code made by the page's «Send your answers»: groups of
-letters and digits between two lines that say IQ2. A file may hold several
-messages; "-" reads stdin. Whatever a chat app or mail client added (line
-breaks, quote marks, formatting, a change of case) is ignored, and a
-checksum catches a code that lost or changed characters. The first form of
-the code, IQ1.z.<…>.END, is still read.
+A message holds a code made by the page's «Send your answers»: one line,
+IQ3. followed by letters and digits. A file may hold several messages; "-"
+reads stdin. Whatever a chat app or mail client put inside the line (line
+breaks, quote marks, formatting, invisible characters) is skipped, and a
+checksum refuses a code that lost or changed characters. The earlier forms,
+IQ2 (groups between two IQ2 lines) and IQ1.z.<…>.END, are still read.
 
 Each sender becomes DIR/guest-<id>.json, the same document the owner's
 «Add answers sent as a message» saves: {answers, extra, updatedAt,
@@ -37,8 +37,11 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from extract_config import extract  # noqa: E402
 
-B32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"  # Crockford base32: no I, L, O or U, so "IQ2" never occurs inside a code
-MARK_RE = re.compile(r"IQ2", re.I)
+B62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+B62_LEN = [0, 2, 3, 5, 6, 7, 9, 10, 11]  # characters for 0 to 8 bytes
+B32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"  # Crockford base32, the IQ2 form
+IQ3_RE = re.compile(r"IQ3", re.I)
+IQ2_RE = re.compile(r"IQ2", re.I)
 OLD_RE = re.compile(r"IQ1\.([zj])\.([A-Za-z0-9_-]+)\.END")
 INVISIBLE_RE = re.compile(r"[\s\u00ad\u200b-\u200d\u2060\ufeff]+")
 GID_RE = re.compile(r"^[a-z0-9]{8,32}$")
@@ -49,11 +52,40 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
-def unpack(span: str):
-    """One IQ2 code: one kind byte (1 JSON, 2 raw deflate), the data, then a big-endian CRC32 of both."""
-    clean = re.sub(r"[^0-9A-Za-z]", "", span).upper().replace("O", "0").replace("I", "1").replace("L", "1")
+def open_pack(pack):
+    """One kind byte (1 JSON, 2 raw deflate), the data, then a big-endian CRC32 of both. None if it doesn't check."""
+    if pack is None or len(pack) < 6 or int.from_bytes(pack[-4:], "big") != zlib.crc32(pack[:-4]):
+        return None
+    kind, data = pack[0], bytes(pack[1:-4])
+    if kind == 2:
+        data = zlib.decompress(data, -15)  # deflate-raw, as the browser's CompressionStream writes it
+    elif kind != 1:
+        return None
+    return json.loads(data.decode("utf-8"))
+
+
+def unb62(s: str):
+    """Every 11 characters are 8 bytes; a shorter last block is fewer bytes (B62_LEN)."""
+    out = bytearray()
+    for i in range(0, len(s), 11):
+        part = s[i:i + 11]
+        if len(part) not in B62_LEN[1:]:
+            return None
+        size, n = B62_LEN.index(len(part)), 0
+        for ch in part:
+            d = B62.find(ch)
+            if d < 0:
+                return None
+            n = n * 62 + d
+        if n >> (8 * size):
+            return None
+        out += n.to_bytes(size, "big")
+    return out
+
+
+def unb32(s: str):
     out, bits, val = bytearray(), 0, 0
-    for ch in clean:
+    for ch in s:
         i = B32.find(ch)
         if i < 0:
             return None
@@ -62,45 +94,63 @@ def unpack(span: str):
             bits -= 8
             out.append((val >> bits) & 255)
         val &= (1 << bits) - 1
-    if len(out) < 6 or int.from_bytes(out[-4:], "big") != zlib.crc32(out[:-4]):
+    return out
+
+
+def try_open(pack):
+    try:
+        return open_pack(pack)
+    except (ValueError, zlib.error):
         return None
-    kind, data = out[0], bytes(out[1:-4])
-    if kind == 2:
-        data = zlib.decompress(data, -15)  # deflate-raw, as the browser's CompressionStream writes it
-    elif kind != 1:
-        return None
-    return json.loads(data.decode("utf-8"))
 
 
 def find_codes(text: str):
-    """Each code in the text as a decoded payload, or None for a text with IQ2 marks but no readable code.
-
-    Marks are paired from the end, as the page does, because "IQ2" can also turn up in someone's note
-    in the readable part of a message, which comes before its code."""
-    marks = [m.start() for m in MARK_RE.finditer(text)]
-    k, found = len(marks) - 1, []
+    """Each code in the text as a decoded payload, or None for a code that is there but doesn't check."""
+    found, seen = [], False
+    # IQ3: join the runs of letters and digits after the mark until the checksum matches.
+    for m in IQ3_RE.finditer(text):
+        seen = True
+        joined = ""
+        for run in [r for r in re.split(r"[^0-9A-Za-z]+", text[m.end():]) if r][:600]:
+            joined += run
+            if len(joined) > 40000:
+                break
+            if (len(joined) % 11 or 11) in B62_LEN and (p := try_open(unb62(joined))) is not None:
+                found.append(p)
+                break
+    if seen and not found:
+        yield None
+    yield from found
+    # IQ2: pairs of marks, from the end, as the page does.
+    marks = [m.start() for m in IQ2_RE.finditer(text)]
+    k, old = len(marks) - 1, []
     while k > 0:
-        try:
-            p = unpack(text[marks[k - 1] + 3:marks[k]])
-        except (ValueError, zlib.error):
-            p = None
+        span = re.sub(r"[^0-9A-Za-z]", "", text[marks[k - 1] + 3:marks[k]]).upper()
+        p = try_open(unb32(span.replace("O", "0").replace("I", "1").replace("L", "1")))
         if p is not None:
-            found.append(p)
+            old.append(p)
             k -= 2
         else:
             k -= 1
-    yield from reversed(found)
-    if marks and not found:
+    if marks and not old:
         yield None
-    elif len(marks) > 2 * len(found):
-        print(f"note: {len(marks) - 2 * len(found)} IQ2 mark(s) outside any readable code: a note that mentions IQ2,"
-              " or another message whose code is damaged", file=sys.stderr)
+    yield from reversed(old)
     for kind, data in OLD_RE.findall(INVISIBLE_RE.sub("", text)):
         try:
             raw = base64.urlsafe_b64decode(data + "=" * (-len(data) % 4))
             yield json.loads((zlib.decompress(raw, -15) if kind == "z" else raw).decode("utf-8"))
         except (ValueError, zlib.error):
             yield None
+
+
+def from_v2(p: dict) -> dict:
+    """The compact form the IQ3 code carries: {v: 2, q, g, n, t, a: {id: [pick, note?]}, x: note?}."""
+    given = p.get("a") if isinstance(p.get("a"), dict) else {}
+    answers = {i: {"pick": x[0] if x else None, "note": x[1] if len(x) > 1 else "", "at": p.get("t")}
+               for i, x in given.items() if isinstance(x, list)}
+    extra = {"note": p["x"], "at": p.get("t")} if isinstance(p.get("x"), str) else None
+    return {"v": 1, "q": p.get("q"), "gid": p.get("g"), "name": p.get("n"), "at": p.get("t"),
+            "answers": answers, "extra": extra}
 
 
 def valid_picks(q: dict) -> set:
@@ -115,6 +165,8 @@ def valid_picks(q: dict) -> set:
 
 def clean(p, cfg: dict):
     """The same checks the page makes before it adds a pasted message. Returns (doc id, document) or an error."""
+    if isinstance(p, dict) and p.get("v") == 2:
+        p = from_v2(p)
     if not isinstance(p, dict) or p.get("v") != 1:
         return None, "not a questionnaire code"
     if p.get("q") != cfg.get("id", "questionnaire"):

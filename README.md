@@ -17,7 +17,7 @@ The skill is built for decision rounds, where you have a recommendation and want
   - floating buttons for the top, the next unanswered question and the last question;
   - a sidebar with a tick for each of your answers, which becomes a drawer on phones;
   - filters for «not answered by me» and «not answered by anyone».
-- **Answers by message for anyone it can't save for:** view-only readers, people claude.ai doesn't identify on the page, and visitors without a Claude account. «Send your answers» makes a message with a code; the owner pastes it into the page, and the answers join the team's under the sender's name.
+- **Answers by message for anyone it can't save for:** view-only readers, people claude.ai doesn't identify on the page, and visitors without a Claude account. «Send your answers» makes a one-line code they paste into a message; the owner pastes it into the page, and the answers join the team's under the sender's name.
 - **Copy as text:** «Copy all answers» gives everyone's answers as plain text.
 - **Light and dark themes,** keyboard friendly, and it respects reduced motion.
 
