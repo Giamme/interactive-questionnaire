@@ -227,7 +227,7 @@ textarea.need{border-color:var(--warn)}
     <h3 data-i18n="copyH"></h3>
     <p class="body" data-i18n="copyP"></p>
     <div><button class="btn" type="button" id="copy" data-i18n="copyB"></button> <span class="status" id="copy-status"></span></div>
-    <textarea class="copyout" id="copyout" readonly hidden></textarea>
+    <textarea class="copyout code1" id="copyout" readonly hidden></textarea>
   </section>
 </div>
 </div>
@@ -248,7 +248,7 @@ const CONFIG = /*CONFIG-START*/null/*CONFIG-END*/;
 const UI = /*UI-START*/{
 "it": {
   "langName": "Italiano",
-  "langAria": "Lingua", "barAria": "Avanzamento e filtri", "filtersAria": "Mostra", "peopleAria": "Chi ha risposto", "copyAria": "Tutte le risposte come testo",
+  "langAria": "Lingua", "barAria": "Avanzamento e filtri", "filtersAria": "Mostra", "peopleAria": "Chi ha risposto", "copyAria": "Tutte le risposte in una riga",
   "purposeL": "Scopo", "fromL": "Da", "toL": "A", "usedL": "Le tue risposte",
   "usedDefault": "Ogni risposta si salva con il tuo nome, e chiunque abbia questa pagina la vede.",
   "contextH": "Contesto", "howH": "Come rispondere",
@@ -270,7 +270,7 @@ const UI = /*UI-START*/{
   "mEmpty": "senza risposta", "mPart": "manca il testo della risposta", "mDone": "risposta data",
   "none": "Nessun altro ha ancora risposto.", "teamAnswers": "Risposte del team",
   "extraH": "Altro?", "extraP": "Qualcosa che non abbiamo chiesto e che dovremmo sapere, o una domanda che secondo te è posta male.", "extraL": "La tua nota", "extraPh": "Facoltativa", "extraNone": "Ancora nessuna nota dagli altri.", "extraTeam": "Note del team",
-  "copyH": "Copia le risposte come testo", "copyP": "Le risposte di tutti, in testo semplice, per una chat o un documento.", "copyB": "Copia tutte le risposte", "copied": "Copiate", "copyFallback": "Selezionate qui sotto: copiale con la tastiera.",
+  "copyH": "Tutte le risposte in una riga", "copyP": "Le risposte di tutti, con i nomi, compresse in una sola riga di lettere e numeri che chat ed email non possono rovinare. Per rileggerle, chi possiede la pagina la incolla in fondo alla pagina, oppure la si incolla in una chat con Claude.", "copyNone": "Non ci sono ancora risposte da copiare.", "copyB": "Copia tutte le risposte", "copied": "Copiate", "copyFallback": "Selezionata qui sotto: copiala con la tastiera.",
   "stSaving": "Salvataggio…", "stSaved": "Salvata", "stLocal": "Tenuta solo in questo browser. Quando hai finito, inviala con «Invia le tue risposte» in fondo alla pagina.", "stLocalShort": "Tenuta solo in questo browser.", "stQuota": "Lo spazio della pagina è pieno, quindi non è stata salvata. Copia le risposte come testo in fondo.", "stError": "Non salvata: {msg}. Riprovo alla prossima modifica.", "unknownErr": "errore sconosciuto",
   "bConnecting": "Collegamento alle risposte condivise…",
   "bNoClaude": "Questa pagina salva le risposte solo quando è aperta su claude.ai. Le tue restano in questo browser: quando hai finito, inviale come messaggio.",
@@ -283,19 +283,19 @@ const UI = /*UI-START*/{
   "sendNameL": "Il tuo nome", "sendNamePh": "Nome e cognome", "sendB": "Prepara il codice", "sendCopy": "Copia il codice",
   "sendReady": "Il codice è pronto: copialo e mandalo a chi ti ha condiviso la pagina.", "sendStale": "Hai cambiato le risposte: prepara di nuovo il codice.",
   "sendNeedName": "Scrivi il tuo nome.", "sendNeedAnswer": "Rispondi almeno a una domanda, poi prepara il codice.",
-  "impH": "Aggiungi risposte arrivate per messaggio", "impP": "Solo tu vedi questa parte. Incolla il codice di chi non poteva salvare qui, da solo o con tutto il messaggio: le sue risposte si aggiungono a quelle del team con il suo nome.",
+  "impH": "Aggiungi risposte da un codice", "impP": "Solo tu vedi questa parte. Incolla un codice, da solo o con tutto il messaggio: quello di chi non poteva salvare qui, o una copia di tutte le risposte. Le risposte si aggiungono a quelle del team con il nome di chi le ha date; quelle già nella pagina restano come sono.",
   "impPh": "Incolla qui il codice o il messaggio", "impRead": "Leggi il codice", "impSave": "Aggiungi le risposte", "impUpdate": "Sostituisci le sue risposte",
   "impPreview": "{name}: domande con risposta {n} su {total}.", "impPreviewUpd": "{name}: domande con risposta {n} su {total}. Ci sono già sue risposte arrivate per messaggio: queste le sostituiscono.",
-  "impSaved": "Aggiunte le risposte di {name}.", "impNone": "Il messaggio non contiene risposte.", "impBad": "Non trovo un codice. Incolla la riga che inizia con IQ3.", "impDamaged": "Il codice è incompleto o alterato. Chiedi a chi l’ha mandato di copiarlo di nuovo dalla pagina e rimandarlo.", "impOther": "Questo codice è di un altro questionario.",
+  "impSaved": "Aggiunte le risposte di {name}.", "impPartial": "Aggiunte le risposte di {name}, poi un errore: {msg}. Riprova per le altre.",
+  "impBundle": "Persone nel codice: {n}. Da aggiungere: {names}.", "impBundleSome": "Persone nel codice: {n}. Da aggiungere: {names}. Le altre sono già nella pagina e restano come sono.", "impBundleNone": "Persone nel codice: {n}. Sono già tutte nella pagina.", "impNone": "Il messaggio non contiene risposte.", "impBad": "Non trovo un codice. Incolla la riga che inizia con IQ3.", "impDamaged": "Il codice è incompleto o alterato. Chiedi a chi l’ha mandato di copiarlo di nuovo dalla pagina e rimandarlo.", "impOther": "Questo codice è di un altro questionario.",
   "guestTag": "via messaggio",
   "bRevoked": "Questa pagina non raggiunge più le risposte condivise.", "bStopped": "Le risposte condivise non si aggiornano più. Ricarica la pagina per ricollegarti.",
   "loading": "Caricamento…", "whoAs": "Rispondi come {name}", "whoYou": "te", "whoGuest": "Rispondi come ospite", "whoOut": "Accesso non effettuato",
-  "you": "Tu", "someone": "Qualcuno",
-  "txtHead": "{title}: risposte", "txtNone": "- (ancora nessuna risposta)", "txtExtra": "Altro"
+  "you": "Tu", "someone": "Qualcuno"
 },
 "en": {
   "langName": "English",
-  "langAria": "Language", "barAria": "Progress and filters", "filtersAria": "Show", "peopleAria": "Who has answered", "copyAria": "All answers as text",
+  "langAria": "Language", "barAria": "Progress and filters", "filtersAria": "Show", "peopleAria": "Who has answered", "copyAria": "All answers in one line",
   "purposeL": "Purpose", "fromL": "From", "toL": "To", "usedL": "Your answers",
   "usedDefault": "Each answer is saved under your name, and everyone with this page can see it.",
   "contextH": "Context", "howH": "How to answer",
@@ -317,7 +317,7 @@ const UI = /*UI-START*/{
   "mEmpty": "not answered", "mPart": "the answer needs its text", "mDone": "answered",
   "none": "No one else has answered yet.", "teamAnswers": "Answers from the team",
   "extraH": "Anything else?", "extraP": "Anything we didn't ask that we should know, or a question you think is framed wrong.", "extraL": "Your note", "extraPh": "Optional", "extraNone": "No notes from others yet.", "extraTeam": "Notes from the team",
-  "copyH": "Copy the answers as text", "copyP": "Everyone's answers, as plain text, for a chat or a document.", "copyB": "Copy all answers", "copied": "Copied", "copyFallback": "Selected below: copy it with your keyboard.",
+  "copyH": "All answers in one line", "copyP": "Everyone's answers, with names, compressed into a single line of letters and digits that chats and email can't spoil. To read them back, the page's owner pastes it at the end of the page, or you paste it into a chat with Claude.", "copyNone": "There are no answers to copy yet.", "copyB": "Copy all answers", "copied": "Copied", "copyFallback": "Selected below: copy it with your keyboard.",
   "stSaving": "Saving…", "stSaved": "Saved", "stLocal": "Kept in this browser only. When you're done, send it with «Send your answers» at the end of the page.", "stLocalShort": "Kept in this browser only.", "stQuota": "The page's storage is full, so this wasn't saved. Copy your answers as text at the end.", "stError": "Not saved: {msg}. It will try again on your next change.", "unknownErr": "unknown error",
   "bConnecting": "Connecting to the shared answers…",
   "bNoClaude": "This page saves answers only when it is opened on claude.ai. Yours are kept in this browser; when you're done, send them as a message.",
@@ -330,15 +330,15 @@ const UI = /*UI-START*/{
   "sendNameL": "Your name", "sendNamePh": "First and last name", "sendB": "Make the code", "sendCopy": "Copy the code",
   "sendReady": "The code is ready: copy it and send it to whoever shared the page with you.", "sendStale": "You changed your answers: make the code again.",
   "sendNeedName": "Write your name.", "sendNeedAnswer": "Answer at least one question, then make the code.",
-  "impH": "Add answers sent as a message", "impP": "Only you see this part. Paste the code from someone who couldn't save here, on its own or with the whole message: their answers join the team's under their name.",
+  "impH": "Add answers from a code", "impP": "Only you see this part. Paste a code, on its own or with the whole message: one from someone who couldn't save here, or a copy of all the answers. The answers join the team's under the name of whoever gave them; answers already on the page stay as they are.",
   "impPh": "Paste the code or the message here", "impRead": "Read the code", "impSave": "Add the answers", "impUpdate": "Replace their answers",
   "impPreview": "{name}: {n} of {total} answered.", "impPreviewUpd": "{name}: {n} of {total} answered. Answers they sent before are already here; these replace them.",
-  "impSaved": "Added the answers from {name}.", "impNone": "The message holds no answers.", "impBad": "I can't find a code. Paste the line that starts with IQ3.", "impDamaged": "The code is incomplete or altered. Ask the sender to copy it again from the page and send it again.", "impOther": "This code belongs to a different questionnaire.",
+  "impSaved": "Added the answers from {name}.", "impPartial": "Added the answers from {name}, then an error: {msg}. Try again for the rest.",
+  "impBundle": "People in the code: {n}. To add: {names}.", "impBundleSome": "People in the code: {n}. To add: {names}. The others are already on the page and stay as they are.", "impBundleNone": "People in the code: {n}. They're all on the page already.", "impNone": "The message holds no answers.", "impBad": "I can't find a code. Paste the line that starts with IQ3.", "impDamaged": "The code is incomplete or altered. Ask the sender to copy it again from the page and send it again.", "impOther": "This code belongs to a different questionnaire.",
   "guestTag": "via message",
   "bRevoked": "This page can no longer reach the shared answers.", "bStopped": "The shared answers stopped updating. Reload the page to reconnect.",
   "loading": "Loading…", "whoAs": "Answering as {name}", "whoYou": "you", "whoGuest": "Answering as a guest", "whoOut": "Not signed in",
-  "you": "You", "someone": "Someone",
-  "txtHead": "{title}: answers", "txtNone": "- (no answers yet)", "txtExtra": "Anything else"
+  "you": "You", "someone": "Someone"
 }
 }/*UI-END*/;
 
@@ -828,7 +828,8 @@ async function resolveProfiles() {
 function nameOf(uid) {
   if (uid === "you" || isMe(uid)) return t("you");
   if (isGuest(uid)) { const d = S.responses[uid]; return ((d && typeof d.guestName === "string" && d.guestName.trim()) || t("someone")) + " · " + t("guestTag"); }
-  const p = S.profiles[uid]; return (p && p.name) || t("someone");
+  const p = S.profiles[uid]; const d = S.responses[uid];
+  return (p && p.name) || (d && typeof d.exportedName === "string" && d.exportedName.trim()) || t("someone");
 }
 function avatarOf(uid) { if (isGuest(uid)) return ""; const p = uid === S.myId && S.me ? S.me : S.profiles[uid]; return p && p.avatarUrl ? p.avatarUrl : ""; }
 function answerRow(q, uid, a) {
@@ -910,36 +911,38 @@ async function refreshAll() {
 
 // ---------- copy ----------
 const oneLine = s => (s || "").trim().replace(/\s+/g, " ");
-function answerText(q, a) {
-  const o = a.pick ? optionOf(q, a.pick) : null;
-  const what = isWritten(q, a) ? "" : a.pick ? (o ? o.short : a.pick) : t("short_note");
-  return [what, oneLine(a.note)].filter(Boolean).join(" — ");
-}
 const hasAnswer = a => !!a && (!!a.pick || !!(a.note || "").trim());
-function asText() {
-  const lines = [t("txtHead", {title: ct("heading") || C.title}), ""];
-  const people = allAnswerers();
-  for (const q of QS) {
-    lines.push(`${q.id} ${words(q).title}`);
-    let any = false;
-    for (const [uid, d] of people) {
-      const a = d && d.answers && d.answers[q.id]; if (!hasAnswer(a)) continue; any = true;
-      lines.push(`- ${nameOf(uid)}: ${answerText(q, a)}`);
-    }
-    if (!any) lines.push(t("txtNone"));
-    lines.push("");
-  }
-  const notes = people.filter(([, d]) => d && d.extra && (d.extra.note || "").trim());
-  if (notes.length) { lines.push(t("txtExtra")); for (const [uid, d] of notes) lines.push(`- ${nameOf(uid)}: ${oneLine(d.extra.note)}`); }
-  return lines.join("\n");
-}
-// Copies inside the click; where the clipboard is refused, the text is shown selected for the keyboard.
+// Copies inside the click where it can; where the clipboard is refused, the line is shown selected for the keyboard.
 function copyOut(text, out, st, keep) {
   const fallback = () => { out.hidden = false; out.value = text; out.focus(); out.select(); say(st, "copyFallback"); };
-  try { navigator.clipboard.writeText(text).then(() => { say(st, "copied"); if (!keep) out.hidden = true; }, fallback); }
+  try { navigator.clipboard.writeText(text).then(() => { say(st, "copied"); if (keep) { out.hidden = false; out.value = text; } else out.hidden = true; }, fallback); }
   catch (_) { fallback(); }
 }
-function onCopy() { copyOut(asText(), $("#copyout"), $("#copy-status")); }
+// Everyone on the page, with the name each shows under: [id, name, saved at, answers, note?] per person.
+function bundle() {
+  const p = [];
+  for (const [uid, d] of allAnswerers()) {
+    const answers = d && d.answers ? Object.fromEntries(Object.entries(d.answers).filter(([id, a]) => byId[id] && hasAnswer(a))) : {};
+    const note = d && d.extra && (d.extra.note || "").trim() ? d.extra.note : null;
+    if (!Object.keys(answers).length && !note) continue;
+    let id = uid, name;
+    if (uid === "you" || isMe(uid)) {
+      if (!S.canSave || !S.myId) id = "guest-" + myGid();
+      name = oneLine($("#send-name").value) || (S.me && S.me.name) || t("someone");
+    } else if (isGuest(uid)) name = d.guestName || t("someone");
+    else name = (S.profiles[uid] && S.profiles[uid].name) || d.exportedName || t("someone");
+    const times = Object.values(answers).map(a => a.at).concat(note ? [d.extra.at] : []).filter(Boolean).sort();
+    const row = [id, oneLine(name).slice(0, 80), d.updatedAt || times[times.length - 1] || now(), packed(answers)];
+    if (note) row.push(note);
+    p.push(row);
+  }
+  return {v: 3, q: KEY, t: now(), p};
+}
+async function onCopy() {
+  const st = $("#copy-status"); const out = $("#copyout"); const b = bundle();
+  if (!b.p.length) { say(st, "copyNone", null, true); return; }
+  copyOut(await encodeAnswers(b), out, st, true);
+}
 
 // ---------- answers sent as a message ----------
 // The code is one line: «IQ3.» and then letters and digits only (base62), so nothing in it reads as formatting to a chat
@@ -1026,43 +1029,72 @@ async function decodeAnswers(text) {
   }
   return {error: seen || marks.length ? "impDamaged" : "impBad"};
 }
-// The code carries the answers packed tight: {v: 2, q: id, g: browser, n: name, t: time, a: {Q7: [pick, note?]}, x: note?}.
-function packAnswers(name, answers, extra) {
+// Codes carry answers packed tight, {Q7: [pick, note?]}. One person's code (from «Send your answers»):
+// {v: 2, q: id, g: browser, n: name, t: time, a: answers, x: note?}. Everyone's (from «Copy all answers»):
+// {v: 3, q: id, t: time, p: [[id, name, saved at, answers, note?], …]}, where id is a user id or "guest-<browser>".
+function packed(answers) {
   const a = {};
   for (const [id, x] of Object.entries(answers)) a[id] = (x.note || "").trim() ? [x.pick, x.note] : [x.pick];
-  const p = {v: 2, q: KEY, g: myGid(), n: name, t: now(), a};
+  return a;
+}
+function packAnswers(name, answers, extra) {
+  const p = {v: 2, q: KEY, g: myGid(), n: name, t: now(), a: packed(answers)};
   if (extra) p.x = extra.note;
   return p;
 }
-function unpackV2(p) {
-  const a = p.a && typeof p.a === "object" ? p.a : {};
+function unpacked(a, at) {
   const answers = {};
-  for (const [id, x] of Object.entries(a)) if (Array.isArray(x)) answers[id] = {pick: x[0], note: x[1] || "", at: p.t};
-  return {v: 1, q: p.q, gid: p.g, name: p.n, at: p.t, answers, extra: typeof p.x === "string" ? {note: p.x, at: p.t} : null};
+  if (a && typeof a === "object") for (const [id, x] of Object.entries(a)) if (Array.isArray(x)) answers[id] = {pick: x[0], note: x[1] || "", at};
+  return answers;
 }
 // A pasted code is someone else's text: keep only known questions, valid picks and bounded notes.
 const AT_RE = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/;
 const cleanAt = v => typeof v === "string" && AT_RE.test(v) ? v : now();
 const cleanNote = v => typeof v === "string" ? v.slice(0, 4000) : "";
-function cleanPayload(p) {
-  if (p && typeof p === "object" && p.v === 2) p = unpackV2(p);
-  if (!p || typeof p !== "object" || p.v !== 1) return {error: "impBad"};
-  if (p.q !== KEY) return {error: "impOther"};
-  const gid = typeof p.gid === "string" && /^[a-z0-9]{8,32}$/.test(p.gid) ? p.gid : null;
-  const name = typeof p.name === "string" ? oneLine(p.name).slice(0, 80) : "";
-  if (!gid || !name) return {error: "impBad"};
+const GID_RE = /^[a-z0-9]{8,32}$/, UID_RE = /^u_[A-Za-z0-9_-]{1,64}$/;
+// One person's answers, or null when nothing usable is left.
+function cleanPerson(name, given, extraNote, at) {
+  name = typeof name === "string" ? oneLine(name).slice(0, 80) : "";
+  if (!name) return null;
+  at = cleanAt(at);
   const answers = {};
   for (const q of QS) {
-    const a = p.answers && typeof p.answers === "object" ? p.answers[q.id] : null;
+    const a = given && typeof given === "object" ? given[q.id] : null;
     if (!a || typeof a !== "object") continue;
     const pick = typeof a.pick === "string" && optionOf(q, a.pick) ? a.pick : null;
     const note = cleanNote(a.note);
-    if (pick || note.trim()) answers[q.id] = {pick, note, at: cleanAt(a.at)};
+    if (pick || note.trim()) answers[q.id] = {pick, note, at: cleanAt(a.at || at)};
   }
-  const en = p.extra && typeof p.extra === "object" ? cleanNote(p.extra.note) : "";
-  const extra = en.trim() ? {note: en, at: cleanAt(p.extra.at)} : null;
-  if (!Object.keys(answers).length && !extra) return {error: "impNone"};
-  return {gid, name, answers, extra, at: cleanAt(p.at)};
+  const en = cleanNote(extraNote);
+  const extra = en.trim() ? {note: en, at} : null;
+  return Object.keys(answers).length || extra ? {name, answers, extra, at} : null;
+}
+// A pasted code becomes the documents to write: [{docId, name, body, replace}]. A sender's own code replaces what
+// they sent before; a copy of everyone's answers only adds the people the page doesn't have.
+function cleanPayload(p) {
+  if (!p || typeof p !== "object") return {error: "impBad"};
+  if (p.q !== KEY) return {error: p.v ? "impOther" : "impBad"};
+  const entries = [];
+  if (p.v === 1 || p.v === 2) {
+    const one = p.v === 2 ? {gid: p.g, c: cleanPerson(p.n, unpacked(p.a, p.t), p.x, p.t)}
+      : {gid: p.gid, c: cleanPerson(p.name, p.answers, p.extra && p.extra.note, p.at)};
+    if (typeof one.gid !== "string" || !GID_RE.test(one.gid)) return {error: "impBad"};
+    if (!one.c) return {error: "impNone"};
+    entries.push({docId: "guest-" + one.gid, name: one.c.name, replace: true,
+      body: {answers: one.c.answers, extra: one.c.extra, updatedAt: one.c.at, guestName: one.c.name, importedAt: now()}});
+  } else if (p.v === 3 && Array.isArray(p.p)) {
+    for (const row of p.p.slice(0, 500)) {
+      if (!Array.isArray(row) || typeof row[0] !== "string") continue;
+      const id = row[0], guest = id.startsWith("guest-");
+      if (guest ? !GID_RE.test(id.slice(6)) : !UID_RE.test(id)) continue;
+      const c = cleanPerson(row[1], unpacked(row[3], row[2]), row[4], row[2]); if (!c) continue;
+      const body = {answers: c.answers, extra: c.extra, updatedAt: c.at, importedAt: now()};
+      if (guest) body.guestName = c.name; else body.exportedName = c.name;
+      if (!entries.some(e => e.docId === id)) entries.push({docId: id, name: c.name, replace: false, body});
+    }
+    if (!entries.length) return {error: "impNone"};
+  } else return {error: "impBad"};
+  return {entries, many: p.v === 3};
 }
 function myGid() {
   if (S.gid) return S.gid;
@@ -1097,18 +1129,30 @@ async function onImpRead() {
   let d = {error: "impBad"}; try { d = await decodeAnswers($("#imp-text").value); } catch (_) {}
   const c = d.error ? d : cleanPayload(d.p);
   if (c.error) { say(st, c.error, null, true); return; }
-  S.imp = c;
-  const exists = !!S.responses["guest-" + c.gid];
-  say(st, exists ? "impPreviewUpd" : "impPreview", {name: c.name, n: Object.keys(c.answers).length, total: QS.length});
-  say(save, exists ? "impUpdate" : "impSave"); save.hidden = false; save.focus();
+  const todo = c.entries.filter(e => e.replace || !S.responses[e.docId]);
+  if (c.many) {
+    const vars = {n: c.entries.length, names: todo.map(e => e.name).join(", ")};
+    if (!todo.length) { say(st, "impBundleNone", vars); return; }
+    say(st, todo.length < c.entries.length ? "impBundleSome" : "impBundle", vars); say(save, "impSave");
+  } else {
+    const e = c.entries[0]; const exists = !!S.responses[e.docId];
+    say(st, exists ? "impPreviewUpd" : "impPreview", {name: e.name, n: Object.keys(e.body.answers).length, total: QS.length});
+    say(save, exists ? "impUpdate" : "impSave");
+  }
+  S.imp = todo; save.hidden = false; save.focus();
 }
 async function onImpSave() {
-  const c = S.imp; if (!c) return;
+  const todo = S.imp; if (!todo || !todo.length) return;
   const st = $("#imp-status"); const save = $("#imp-save"); save.disabled = true;
+  const done = [];
   try {
-    await S.db.doc("responses/guest-" + c.gid).set({answers: c.answers, extra: c.extra, updatedAt: c.at, guestName: c.name, importedAt: now()});
-    S.imp = null; save.hidden = true; $("#imp-text").value = ""; say(st, "impSaved", {name: c.name});
-  } catch (e) { say(st, "stError", {msg: e && e.message ? e.message : t("unknownErr")}, true); }
+    for (const e of todo) { await S.db.doc("responses/" + e.docId).set(e.body); done.push(e.name); }
+    S.imp = null; save.hidden = true; $("#imp-text").value = ""; say(st, "impSaved", {name: done.join(", ")});
+  } catch (e) {
+    const msg = e && e.message ? e.message : t("unknownErr");
+    say(st, done.length ? "impPartial" : "stError", {msg, name: done.join(", ")}, true);
+    S.imp = todo.slice(done.length);
+  }
   save.disabled = false;
 }
 

@@ -104,6 +104,8 @@ Someone the page can't save for sends a one-line code: `IQ3.` followed by letter
 - **Reading it back** joins the runs of letters and digits after `IQ3` until the CRC32 matches, so line breaks, quote marks, formatting and invisible characters a chat put inside the line are skipped. A code that lost or changed a character, or changed case, is refused as damaged, never read wrong.
 - **The JSON is packed tight:** `{"v": 2, "q": "<config id>", "g": "<16 letters and digits>", "n": "Their name", "t": "<time>", "a": {"Q7": ["yes"], "Q9": ["answer", "their text"]}, "x": "the «Anything else?» note"}`. `g` is the sender's browser, so a second code from the same person replaces the first.
 
+«Copy all answers» makes the same kind of line holding everyone on the page: `{"v": 3, "q": "<config id>", "t": "<time>", "p": [["<user id or guest-<browser>>", "Name", "<saved at>", {"Q7": ["yes"]}, "note?"], …]}`. Pasted into the page by the owner, it adds the people the page doesn't have (a user id gets its own document with `exportedName`, a guest gets `guest-<browser>` with `guestName`) and leaves everyone else as they are.
+
 Earlier forms are still read: `IQ2` (Crockford base32 in groups between two `IQ2` lines) and `IQ1.z.<base64url>.END`.
 
-When the owner adds it, or Claude does with `scripts/import_answers.py`, it becomes the document `responses/guest-<gid>`, with the same fields as above plus `guestName` (the name they typed) and `importedAt`. Only known question ids, valid picks and notes up to 4,000 characters are kept, and a code for another questionnaire is refused.
+When the owner adds one person's code, or Claude does with `scripts/import_answers.py`, it becomes the document `responses/guest-<gid>`, with the same fields as above plus `guestName` (the name they typed) and `importedAt`. Only known question ids, valid picks and notes up to 4,000 characters are kept, and a code for another questionnaire is refused.

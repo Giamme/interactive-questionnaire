@@ -4,21 +4,22 @@
     python3 -I import_answers.py (--config CONFIG.json | --page PAGE.html)
                                  MESSAGE.txt [MESSAGE2.txt …] --out DIR [--writes WRITES.json]
 
-A message holds a code made by the page's «Send your answers»: one line,
-IQ3. followed by letters and digits. A file may hold several messages; "-"
+A code is one line, IQ3. followed by letters and digits, made by the page's
+«Send your answers» (one person) or «Copy all answers» (everyone, with names). A file may hold several messages; "-"
 reads stdin. Whatever a chat app or mail client put inside the line (line
 breaks, quote marks, formatting, invisible characters) is skipped, and a
 checksum refuses a code that lost or changed characters. The earlier forms,
 IQ2 (groups between two IQ2 lines) and IQ1.z.<…>.END, are still read.
 
-Each sender becomes DIR/guest-<id>.json, the same document the owner's
-«Add answers sent as a message» saves: {answers, extra, updatedAt,
-guestName, importedAt}. The id is the sender's browser, so a second
-message from the same person replaces the first.
+Each person becomes a document in DIR, the same one the owner's «Add answers
+from a code» saves: guest-<browser id>.json with guestName for someone who
+couldn't save, or <user id>.json with exportedName from a copy of everyone's
+answers. A newer copy of the same person replaces an older one.
 
 --writes also writes the `writes` list for an ArtifactData "batch" into
-the "responses" collection. A guest document that is already on the page
-needs its `version` as `if_version` (read it with ArtifactData "list" first).
+the "responses" collection. Drop the people already on the page (read it
+with ArtifactData "list" first) unless the user wants them replaced; a
+replaced document needs its `version` as `if_version`.
 summarize.py reads DIR with a second --docs to report answers that are not
 on the page yet.
 
@@ -143,14 +144,12 @@ def find_codes(text: str):
             yield None
 
 
-def from_v2(p: dict) -> dict:
-    """The compact form the IQ3 code carries: {v: 2, q, g, n, t, a: {id: [pick, note?]}, x: note?}."""
-    given = p.get("a") if isinstance(p.get("a"), dict) else {}
-    answers = {i: {"pick": x[0] if x else None, "note": x[1] if len(x) > 1 else "", "at": p.get("t")}
-               for i, x in given.items() if isinstance(x, list)}
-    extra = {"note": p["x"], "at": p.get("t")} if isinstance(p.get("x"), str) else None
-    return {"v": 1, "q": p.get("q"), "gid": p.get("g"), "name": p.get("n"), "at": p.get("t"),
-            "answers": answers, "extra": extra}
+def unpacked(a, at) -> dict:
+    """Answers packed as {id: [pick, note?]}, the form IQ3 codes carry."""
+    if not isinstance(a, dict):
+        return {}
+    return {i: {"pick": x[0] if x else None, "note": x[1] if len(x) > 1 else "", "at": at}
+            for i, x in a.items() if isinstance(x, list)}
 
 
 def valid_picks(q: dict) -> set:
@@ -163,21 +162,17 @@ def valid_picks(q: dict) -> set:
     return keys if q.get("unsure") is False else keys | {"unsure"}
 
 
-def clean(p, cfg: dict):
-    """The same checks the page makes before it adds a pasted message. Returns (doc id, document) or an error."""
-    if isinstance(p, dict) and p.get("v") == 2:
-        p = from_v2(p)
-    if not isinstance(p, dict) or p.get("v") != 1:
-        return None, "not a questionnaire code"
-    if p.get("q") != cfg.get("id", "questionnaire"):
-        return None, f"belongs to another questionnaire ({p.get('q')!r})"
-    gid, name = p.get("gid"), p.get("name")
+UID_RE = re.compile(r"^u_[A-Za-z0-9_-]{1,64}$")
+
+
+def clean_person(name, given, extra_note, at, cfg: dict):
+    """One person's answers with the page's checks: known questions, valid picks, notes up to 4,000 characters."""
     name = " ".join(name.split())[:80] if isinstance(name, str) else ""
-    if not isinstance(gid, str) or not GID_RE.match(gid) or not name:
-        return None, "the sender's id or name is missing"
-    at = lambda v: v if isinstance(v, str) and AT_RE.match(v) else now()
+    if not name:
+        return None
+    at = at if isinstance(at, str) and AT_RE.match(at) else now()
     note = lambda v: v[:4000] if isinstance(v, str) else ""
-    given = p.get("answers") if isinstance(p.get("answers"), dict) else {}
+    given = given if isinstance(given, dict) else {}
     answers = {}
     for q in cfg["questions"]:
         a = given.get(q["id"])
@@ -186,13 +181,53 @@ def clean(p, cfg: dict):
         pick = a.get("pick") if a.get("pick") in valid_picks(q) else None
         text = note(a.get("note"))
         if pick or text.strip():
-            answers[q["id"]] = {"pick": pick, "note": text, "at": at(a.get("at"))}
-    ex = p.get("extra") if isinstance(p.get("extra"), dict) else {}
-    extra = {"note": note(ex.get("note")), "at": at(ex.get("at"))} if note(ex.get("note")).strip() else None
-    if not answers and not extra:
-        return None, "holds no answers"
-    return "guest-" + gid, {"answers": answers, "extra": extra, "updatedAt": at(p.get("at")),
-                            "guestName": name, "importedAt": now()}
+            a_at = a.get("at")
+            answers[q["id"]] = {"pick": pick, "note": text, "at": a_at if isinstance(a_at, str) and AT_RE.match(a_at) else at}
+    extra = {"note": note(extra_note), "at": at} if note(extra_note).strip() else None
+    return (name, answers, extra, at) if answers or extra else None
+
+
+def clean(p, cfg: dict):
+    """The documents a code stands for, as the page would write them: ([(doc id, document)], problem or None).
+
+    One person's code (v1, v2) becomes guest-<browser>. A copy of everyone's answers (v3) becomes one
+    document per person: guest-<browser> with guestName, or their user id with exportedName."""
+    if not isinstance(p, dict):
+        return [], "is not a questionnaire code"
+    if p.get("q") != cfg.get("id", "questionnaire"):
+        return [], f"belongs to another questionnaire ({p.get('q')!r})"
+    v, out = p.get("v"), []
+    if v in (1, 2):
+        if v == 2:
+            gid, c = p.get("g"), clean_person(p.get("n"), unpacked(p.get("a"), p.get("t")), p.get("x"), p.get("t"), cfg)
+        else:
+            ex = p.get("extra") if isinstance(p.get("extra"), dict) else {}
+            gid, c = p.get("gid"), clean_person(p.get("name"), p.get("answers"), ex.get("note"), p.get("at"), cfg)
+        if not isinstance(gid, str) or not GID_RE.match(gid):
+            return [], "has no sender id"
+        if c is None:
+            return [], "holds no answers"
+        name, answers, extra, at = c
+        out.append(("guest-" + gid, {"answers": answers, "extra": extra, "updatedAt": at, "guestName": name, "importedAt": now()}))
+    elif v == 3 and isinstance(p.get("p"), list):
+        for row in p["p"][:500]:
+            if not isinstance(row, list) or len(row) < 4 or not isinstance(row[0], str):
+                continue
+            pid, guest = row[0], row[0].startswith("guest-")
+            if not (GID_RE.match(pid[6:]) if guest else UID_RE.match(pid)):
+                continue
+            c = clean_person(row[1], unpacked(row[3], row[2]), row[4] if len(row) > 4 else None, row[2], cfg)
+            if c is None or any(d == pid for d, _ in out):
+                continue
+            name, answers, extra, at = c
+            doc = {"answers": answers, "extra": extra, "updatedAt": at, "importedAt": now()}
+            doc["guestName" if guest else "exportedName"] = name
+            out.append((pid, doc))
+        if not out:
+            return [], "holds no answers"
+    else:
+        return [], "is not a questionnaire code"
+    return out, None
 
 
 def main():
@@ -216,21 +251,22 @@ def main():
             print(f"{m}: no code found", file=sys.stderr)
             problems += 1
         for payload in found:
-            doc_id, doc = clean(payload, cfg) if payload is not None else (None, "is damaged or cut short")
-            if doc_id is None:
-                print(f"{m}: skipped a code that {doc}", file=sys.stderr)
+            pairs, problem = clean(payload, cfg) if payload is not None else ([], "is damaged or cut short")
+            if problem:
+                print(f"{m}: skipped a code that {problem}", file=sys.stderr)
                 problems += 1
-                continue
-            old = docs.get(doc_id)
-            if old is None or doc["updatedAt"] >= old["updatedAt"]:
-                docs[doc_id] = doc  # the newer message from the same sender wins
+            for doc_id, doc in pairs:
+                old = docs.get(doc_id)
+                if old is None or doc["updatedAt"] >= old["updatedAt"]:
+                    docs[doc_id] = doc  # the newer copy of the same person wins
 
     writes = []
     for doc_id, doc in sorted(docs.items()):
         f = out / f"{doc_id}.json"
         f.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         writes.append({"op": "set", "collection": "responses", "doc_id": doc_id, "file_path": str(f.resolve())})
-        print(f"{doc_id}: {doc['guestName']}, {len(doc['answers'])} of {len(cfg['questions'])} answered -> {f}")
+        who = doc.get("guestName") or doc.get("exportedName")
+        print(f"{doc_id}: {who}, {len(doc['answers'])} of {len(cfg['questions'])} answered -> {f}")
     if a.writes:
         Path(a.writes).write_text(json.dumps(writes, indent=2) + "\n", encoding="utf-8")
         print(f"wrote {a.writes} ({len(writes)} writes)")
