@@ -1,0 +1,51 @@
+{
+  "versions": [
+    {
+      "version": "0.1",
+      "date": "2026-10-15",
+      "summary": "First public release: a skill that turns your questions into a claude.ai page a team fills in one after another, keeping every answer for Claude to read back.",
+      "entries": [
+        {
+          "type": "added",
+          "text": "Build a shareable questionnaire page on claude.ai from a JSON config: each person's answers are saved under their name, everyone sees the team's answers, and Claude reads them back into a report.",
+          "breaking": false,
+          "audience": "user",
+          "highlight": true,
+          "commits": []
+        },
+        {
+          "type": "added",
+          "text": "Three kinds of question: decisions with a recommended answer (yes, a different answer, not sure), multiple choice with your own options, and open questions with a written answer.",
+          "breaking": false,
+          "audience": "user",
+          "highlight": false,
+          "commits": []
+        },
+        {
+          "type": "added",
+          "text": "Pages in one or more languages, with a switch at the top. Italian and English are built in, and any other language can bring its own wording.",
+          "breaking": false,
+          "audience": "user",
+          "highlight": false,
+          "commits": []
+        },
+        {
+          "type": "added",
+          "text": "Answering closes the question and scrolls to the next unanswered one. Floating buttons go to the top, the next unanswered question and the last one, and a sidebar lists every question with a tick for your answers (a drawer on phones).",
+          "breaking": false,
+          "audience": "user",
+          "highlight": false,
+          "commits": []
+        },
+        {
+          "type": "added",
+          "text": "Scripts: `build.py` checks a config and explains every error before building the page, `extract_config.py` gets the config back out of a published page, and `summarize.py` turns the saved answers into a Markdown report.",
+          "breaking": false,
+          "audience": "user",
+          "highlight": false,
+          "commits": []
+        }
+      ]
+    }
+  ]
+}
