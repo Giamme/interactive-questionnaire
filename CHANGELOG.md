@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and versions follow the format `{major}.{minor}` ([...] parts appear only when non-zero).
 
+## [0.2] - 2026-10-15
+
+Everyone who opens a shared questionnaire now sees the team's answers, and people the page can't save for, including visitors without a Claude account, send theirs as one compressed line that chats can't break.
+
+### Highlights
+
+- Anyone the page can't save for, including visitors without a Claude account, can send their answers with «Send your answers», which makes a one-line code to paste into a message; the owner pastes it into «Add answers from a code» and the answers join the team's under the sender's name. The code is letters and digits only, with a checksum, so it survives the formatting chat apps and mail clients apply, and a damaged code is refused rather than read wrong.
+- «Copy all answers» now copies everyone's answers, with names, as one compressed line of letters and digits instead of readable text, so chats and email can't reformat it; the owner can paste it back into the page, which adds anyone missing and leaves the rest as they are, or paste it to Claude.
+- People who open a shared questionnaire without an identity on the page, such as teammates outside your organization, now see the team's answers instead of an empty page.
+
+### Added
+
+- A config's `legacyLocalKey` brings in answers an earlier version of the page kept in someone's browser, and people who can now save carry those answers into the page.
+- `scripts/import_answers.py` decodes answer codes, from one person or from «Copy all answers», into documents for the report or for an ArtifactData batch, and `summarize.py` names their senders and takes more than one `--docs` folder.
+
+### Changed
+
+- The skill's sharing advice now says who can save at each share level: on a personal plan, invite teammates by email as Editors with no public link, or keep the link and collect answers by message.
+
 ## [0.1] - 2026-10-15
 
 First public release: a skill that turns your questions into a claude.ai page a team fills in one after another, keeping every answer for Claude to read back.
