@@ -1,6 +1,6 @@
 # interactive-questionnaire
 
-A Claude Code skill that turns a set of questions into a **shareable questionnaire page on claude.ai**, or into **a single HTML file** for people who don't use claude.ai. Several people fill it in, one after another, and the page keeps every answer. Claude reads the answers back and summarizes them.
+An agent skill that turns a set of questions into a **shareable questionnaire page on claude.ai**, or into **a single HTML file** for people who don't use claude.ai. Several people fill it in, one after another, and the page keeps every answer. Claude reads the answers back and summarizes them.
 
 The skill is built for decision rounds, where you have a recommendation and want the team to agree or say what instead. It also handles plain multiple choice and open questions.
 
@@ -21,28 +21,72 @@ The skill is built for decision rounds, where you have a recommendation and want
 - **Copy in one line:** «Copy all answers» copies everyone's answers, with names, as one compressed line of letters and digits. The owner can paste it back into the page, which adds anyone missing, or paste it to Claude.
 - **Light and dark themes,** keyboard friendly, and it respects reduced motion.
 
-## Requirements
-
-- Claude Code signed in to a claude.ai account that can publish Artifacts (the `Artifact` and `ArtifactData` tools).
-- Python 3.10 or newer for the scripts.
-- Node.js is optional; `build.py` uses it to check that the page's script parses.
-
 ## Install
 
-```bash
-git clone https://github.com/Giamme/interactive-questionnaire.git ~/dev/interactive-questionnaire
+What you get depends on the agent:
+
+| Agent | What it makes |
+|---|---|
+| Claude Code signed in to a claude.ai account that can publish Artifacts | the claude.ai page, or the file on request |
+| Claude Code on an API key, Bedrock or Vertex; Codex, Copilot CLI, Cursor, Gemini CLI, OpenCode and others | the single HTML file |
+
+The scripts need Python 3.10 or newer. Node.js is optional: `build.py` uses it to check that the page's script parses.
+
+### Claude Code
+
+```
+/plugin marketplace add Giamme/interactive-questionnaire
+/plugin install interactive-questionnaire@interactive-questionnaire
 ```
 
-```bash
-ln -s ~/dev/interactive-questionnaire ~/.claude/skills/interactive-questionnaire
+From a shell: `claude plugin marketplace add Giamme/interactive-questionnaire && claude plugin install interactive-questionnaire@interactive-questionnaire`.
+
+### Codex
+
+```sh
+codex plugin marketplace add Giamme/interactive-questionnaire
+codex plugin add interactive-questionnaire@interactive-questionnaire
 ```
 
-Then ask Claude Code for a questionnaire, a survey or a decision round for your team, or run `/interactive-questionnaire`.
+### GitHub Copilot CLI
+
+```sh
+copilot plugin marketplace add Giamme/interactive-questionnaire
+copilot plugin install interactive-questionnaire@interactive-questionnaire
+```
+
+### Cursor, Gemini CLI, Antigravity, OpenCode, Windsurf/Devin, Amp, Kiro and others
+
+Install the skill with [`npx skills`](https://github.com/vercel-labs/skills), which knows where each agent looks:
+
+```sh
+npx skills add Giamme/interactive-questionnaire            # pick agents interactively
+npx skills add Giamme/interactive-questionnaire -g -a cursor -a gemini-cli -a opencode -y
+```
+
+### From a clone
+
+To track `main` and update every agent with a `git pull`, clone the repo and symlink the skill into each agent that's installed:
+
+```sh
+git clone https://github.com/Giamme/interactive-questionnaire ~/src/interactive-questionnaire
+~/src/interactive-questionnaire/scripts/install --dry-run   # see what would be linked
+~/src/interactive-questionnaire/scripts/install             # every detected agent; or --client codex --client claude
+~/src/interactive-questionnaire/scripts/install --uninstall
+```
+
+Install the skill in one place per agent. With the Claude Code plugin installed, don't also link the skill into `~/.claude/skills`, or Claude Code lists it twice.
+
+**Upgrading an older install:** the skill used to sit at the root of the repo and now lives in `skills/interactive-questionnaire/`. If you linked the whole clone into `~/.claude/skills/interactive-questionnaire`, remove that link and use one of the methods above.
+
+Then ask your agent for a questionnaire, a survey or a decision round for your team.
 
 ## How it works
 
-1. Claude writes the questions into a JSON config ([references/config.md](references/config.md)). The [examples](examples/) are complete models.
-2. `scripts/build.py` checks the config and fills [assets/template.html](assets/template.html):
+Commands below run from `skills/interactive-questionnaire/`.
+
+1. Claude writes the questions into a JSON config ([references/config.md](skills/interactive-questionnaire/references/config.md)). The [examples](skills/interactive-questionnaire/examples/) are complete models.
+2. `scripts/build.py` checks the config and fills [assets/template.html](skills/interactive-questionnaire/assets/template.html):
 
    ```bash
    python3 -I scripts/build.py examples/team-agreements.json /tmp/team.html --preview
@@ -52,9 +96,11 @@ Then ask Claude Code for a questionnaire, a survey or a decision round for your 
 4. Claude reads the answers with ArtifactData and turns them into a report with `scripts/summarize.py`. Messages pasted into the chat are decoded with `scripts/import_answers.py`.
 5. The config travels inside the published page, so `scripts/extract_config.py` can get it back in a later session, to change the questions and republish without losing answers.
 
-[SKILL.md](SKILL.md) is the full workflow Claude follows.
+[SKILL.md](skills/interactive-questionnaire/SKILL.md) is the full workflow Claude follows.
 
 ## Without claude.ai: one file to share
+
+From `skills/interactive-questionnaire/`:
 
 ```bash
 python3 -I scripts/build.py examples/team-agreements.json team.html --standalone
@@ -62,9 +108,16 @@ python3 -I scripts/build.py examples/team-agreements.json team.html --standalone
 
 `team.html` opens in any browser, with no account and no server. Each person answers, then «Save a copy with the answers» downloads the file again with their answers and everyone's before them, to send to the next person or back to whoever collects. The collector adds the copies (or one-line codes) people send back in «Add other people's answers». `scripts/import_answers.py` and `scripts/summarize.py` read the answers straight out of a returned copy.
 
+## What it runs
+
+- **The scripts** are standard-library Python, with no dependencies, no network calls and no environment variables. They read and write only the files you name: the config, the page, its preview, the imported answers and the report. When Node.js is installed, `build.py` runs `node --check` on a temporary copy of the page's script and deletes it.
+- **The preview:** the agent serves the questionnaire folder on `127.0.0.1:8769` with `python3 -m http.server`, opens it, then stops the server and deletes the preview.
+- **The claude.ai page** saves each person's picks, notes and times in the Artifact's own store, under their claude.ai account. Everyone who can open the page sees them.
+- **The page** loads its font from Google Fonts (fonts.googleapis.com and fonts.gstatic.com) and, on claude.ai, shows people's profile pictures. It sends answers nowhere else. Your browser keeps your own answers, language, name and a random browser id in `localStorage`. «Copy all answers» writes to the clipboard, and the file version's «Save a copy» puts everyone's answers in the downloaded file.
+
 ## Privacy
 
-Everyone who can open a questionnaire page sees the whole page and every answer, with names. Don't put secrets or personal data in the questions. The page doesn't send anything anywhere else.
+Everyone who can open a questionnaire page sees the whole page and every answer, with names. Don't put secrets or personal data in the questions.
 
 ## Versions
 

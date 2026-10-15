@@ -14,7 +14,11 @@
     "zero_major": true
   },
   "version_files": [
-    "VERSION"
+    "VERSION",
+    {
+      "path": ".claude-plugin/plugin.json",
+      "format": "{major}.{minor}.0"
+    }
   ],
   "whats_new_path": null,
   "skip_types": [

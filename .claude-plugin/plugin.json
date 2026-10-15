@@ -1,0 +1,13 @@
+{
+  "name": "interactive-questionnaire",
+  "description": "Turn your questions into a questionnaire a team fills in one after another: a shareable claude.ai page that saves every answer under each person's name, or a single HTML file for people without claude.ai. Claude reads the answers back and summarizes them.",
+  "version": "0.3.0",
+  "author": {
+    "name": "Giamme",
+    "url": "https://github.com/Giamme"
+  },
+  "homepage": "https://github.com/Giamme/interactive-questionnaire",
+  "repository": "https://github.com/Giamme/interactive-questionnaire",
+  "license": "MIT",
+  "keywords": ["questionnaire", "survey", "decision-making", "team", "artifacts"]
+}

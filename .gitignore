@@ -1,5 +1,5 @@
 # Private examples stay on this machine.
-examples/private/
+skills/interactive-questionnaire/examples/private/
 
 # Build and preview output
 *.preview.html

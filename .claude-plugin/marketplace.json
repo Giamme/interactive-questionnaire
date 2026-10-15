@@ -1,0 +1,16 @@
+{
+  "name": "interactive-questionnaire",
+  "owner": {
+    "name": "Giamme"
+  },
+  "metadata": {
+    "description": "Questionnaires a team fills in, with every answer kept."
+  },
+  "plugins": [
+    {
+      "name": "interactive-questionnaire",
+      "source": ".",
+      "description": "Turn your questions into a questionnaire a team fills in one after another: a shareable claude.ai page that saves every answer under each person's name, or a single HTML file for people without claude.ai. Claude reads the answers back and summarizes them."
+    }
+  ]
+}

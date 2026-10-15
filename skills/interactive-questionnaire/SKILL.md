@@ -29,7 +29,7 @@ Here's what people get:
 
 ## 1. Settle the send
 
-If the user already has the questions (a grilling round, a `to-questionnaire` draft, a list), go to step 2. Otherwise ask, in one exchange:
+If the user already has the questions (a grilling round, a `to-questionnaire` draft, a list), settle only where it lives (the last point below), then go to step 2. Otherwise ask, in one exchange:
 
 - **Who answers:** their role, and what they know that the user doesn't.
 - **What the user needs back:** the decisions or facts they can't settle alone.
@@ -67,7 +67,7 @@ The script refuses a config with errors and explains each one. Fix them and read
 Serve the folder and open the preview in the built-in browser:
 
 1. Run `python3 -m http.server 8769 --bind 127.0.0.1` from `questionnaire/`, in the background.
-2. Call `preview_start` with `http://127.0.0.1:8769/<id>.preview.html`.
+2. Call `preview_start` with `http://127.0.0.1:8769/<id>.preview.html`. Without that tool, open the URL in the user's browser (`open` on macOS, `xdg-open` on Linux, `start` on Windows) and ask them to check it.
 
 Outside claude.ai the preview runs as the file version: it keeps answers in this browser and offers «Save a copy with the answers». That's expected. Check that each language reads well, and that answering one question closes it and lands on the next. Afterwards, clear the preview's `localStorage`, stop the server and delete the preview file. Publish `<id>.html`, never the preview.
 
