@@ -44,6 +44,9 @@ def check(cfg: dict, ui: dict) -> tuple[list[str], list[str]]:
         warnings.append(f"title: '{cfg['title']}' is long; the gallery shows it as the page's name")
     if not isinstance(cfg.get("id"), str) or not KEY_RE.match(cfg["id"]):
         err("id: a slug such as 'team-offsite-2026' is required (letters, digits, - and _)")
+    legacy = cfg.get("legacyLocalKey")
+    if legacy is not None and (not isinstance(legacy, str) or not legacy.strip() or len(legacy) > 100):
+        err("legacyLocalKey: the browser storage key an older version of this page kept answers under (a string)")
 
     langs = cfg.get("languages")
     if not isinstance(langs, list) or not langs or not all(isinstance(l, str) and l for l in langs):

@@ -17,7 +17,8 @@ The skill is built for decision rounds, where you have a recommendation and want
   - floating buttons for the top, the next unanswered question and the last question;
   - a sidebar with a tick for each of your answers, which becomes a drawer on phones;
   - filters for «not answered by me» and «not answered by anyone».
-- **Copy as text:** «Copy all answers» gives plain text for anyone who can't save on the page.
+- **Answers by message for anyone it can't save for:** view-only readers, people claude.ai doesn't identify on the page, and visitors without a Claude account. «Send your answers» makes a message with a code; the owner pastes it into the page, and the answers join the team's under the sender's name.
+- **Copy as text:** «Copy all answers» gives everyone's answers as plain text.
 - **Light and dark themes,** keyboard friendly, and it respects reduced motion.
 
 ## Requirements
@@ -47,8 +48,8 @@ Then ask Claude Code for a questionnaire, a survey or a decision round for your 
    python3 -I scripts/build.py examples/team-agreements.json /tmp/team.html --preview
    ```
 
-3. Claude publishes the page as a private Artifact, with a shared store where each person writes only their own answers. You share it from claude.ai, giving people Contributor access so they can save.
-4. Claude reads the answers with ArtifactData and turns them into a report with `scripts/summarize.py`.
+3. Claude publishes the page as a private Artifact, with a shared store where each person writes only their own answers. You share it from claude.ai. Who can save depends on the share level: the owner and Editors always, Contributors on Team and Enterprise plans. Everyone else sends their answers as a message.
+4. Claude reads the answers with ArtifactData and turns them into a report with `scripts/summarize.py`. Messages pasted into the chat are decoded with `scripts/import_answers.py`.
 5. The config travels inside the published page, so `scripts/extract_config.py` can get it back in a later session, to change the questions and republish without losing answers.
 
 [SKILL.md](SKILL.md) is the full workflow Claude follows.

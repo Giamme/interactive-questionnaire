@@ -11,7 +11,8 @@ Two complete examples are in `examples/`:
 
 | Field | Required | What it is |
 |---|---|---|
-| `id` | yes | A slug such as `offsite-2027`. It keys the viewer's browser storage (their language choice, and answers kept locally when the page can't save). Keep it the same across republishes. |
+| `id` | yes | A slug such as `offsite-2027`. It keys the viewer's browser storage (their language choice, their name and answers kept locally when the page can't save) and it's checked in every answer sent as a message. Keep it the same across republishes. |
+| `legacyLocalKey` | no | The full browser storage key under which an earlier version of the page kept answers it couldn't save, such as `old-id:answers`. The page reads it when nothing is kept under the current `id`, and someone who can now save brings those answers into the page. Use it only when the `id` changed. |
 | `title` | yes | The page name in the browser tab and the claude.ai gallery: two to four words, a name rather than a sentence («Offsite Planning Round», not «Survey: please answer»). |
 | `languages` | yes | Language codes. The first is the default, and the others appear in a switch at the top. With one language there's no switch. The template ships `it` and `en`. |
 | `content` | yes | Per language, the questionnaire's own words (see below). A missing language falls back to the first one. |
@@ -94,3 +95,16 @@ The values of `pick` depend on the kind:
 - `open`: `answer` (the text is in `note`) or `unsure`.
 
 `note` is the comment, or the required text. Nothing in the document depends on the page's language.
+
+### Answers sent as a message
+
+Someone the page can't save for sends a message ending in a code: `IQ1.z.` (or `IQ1.j.` where the browser can't compress), the answers in base64url, then `.END`. Decoded, the code is:
+
+```json
+{"v": 1, "q": "<config id>", "gid": "<16 letters and digits>", "name": "Their name",
+ "answers": {"Q7": {"pick": "yes", "note": "", "at": "…"}}, "extra": null, "at": "…"}
+```
+
+`z` means the JSON is deflated (raw deflate, no header) before encoding. `gid` is the sender's browser, so a second message from the same person replaces the first.
+
+When the owner adds it, or Claude does with `scripts/import_answers.py`, it becomes the document `responses/guest-<gid>`, with the same fields as above plus `guestName` (the name they typed) and `importedAt`. Only known question ids, valid picks and notes up to 4,000 characters are kept, and a code for another questionnaire is refused.

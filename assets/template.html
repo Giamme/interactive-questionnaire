@@ -148,6 +148,12 @@ textarea.need{border-color:var(--warn)}
 }
 @keyframes flash{0%{box-shadow:0 0 0 0 transparent}25%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 3px transparent}}
 .flash{animation:flash 1.4s ease-out .25s}
+/* Answers sent as a message, for people the page cannot save for, and the owner's import. */
+.banner{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.linkbtn{font:inherit;border:0;background:none;padding:0;color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.field{font:inherit;font-size:14px;color:var(--fg);background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;max-width:360px}
+.field:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
 [hidden]{display:none!important}
 @media (max-width:520px){.sheet{padding:16px}.meta{grid-template-columns:minmax(0,1fr)}.meta dt{margin-top:6px}h1{font-size:24px}}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}.anim .card,.anim .fold,.toc,.toc.open{transition:none}.flash{animation:none}}
@@ -173,7 +179,7 @@ textarea.need{border-color:var(--warn)}
     <p class="lede" id="context"></p>
     <h3 class="sub" data-i18n="howH"></h3>
     <p class="lede" id="how"></p>
-    <div id="banner" class="banner info"></div>
+    <div id="banner" class="banner info"><span id="banner-text"></span><button type="button" class="linkbtn" id="banner-go" data-i18n="sendGo" hidden></button></div>
   </header>
 
   <div class="bar" role="region" id="bar">
@@ -196,6 +202,24 @@ textarea.need{border-color:var(--warn)}
     <textarea id="extra-note" data-i18n-ph="extraPh"></textarea>
     <div class="status" id="extra-status"></div>
     <div class="others" id="extra-others"></div>
+  </section>
+
+  <section class="sheet" id="send" hidden>
+    <h3 tabindex="-1" data-i18n="sendH"></h3>
+    <p class="body" data-i18n="sendP"></p>
+    <label class="small" for="send-name" data-i18n="sendNameL"></label>
+    <input class="field" id="send-name" type="text" autocomplete="name" maxlength="80" data-i18n-ph="sendNamePh">
+    <div class="row"><button class="btn" type="button" id="send-make" data-i18n="sendB"></button><span class="status" id="send-status" aria-live="polite"></span></div>
+    <textarea class="copyout" id="send-out" readonly hidden></textarea>
+    <div class="row"><button class="btn" type="button" id="send-copy" data-i18n="sendCopy" hidden></button><span class="status" id="send-copied" aria-live="polite"></span></div>
+  </section>
+
+  <section class="sheet" id="import" hidden>
+    <h3 id="imp-h" data-i18n="impH"></h3>
+    <p class="body" data-i18n="impP"></p>
+    <textarea class="copyout" id="imp-text" aria-labelledby="imp-h" data-i18n-ph="impPh"></textarea>
+    <div class="row"><button class="btn" type="button" id="imp-read" data-i18n="impRead"></button><button class="btn" type="button" id="imp-save" hidden></button></div>
+    <div class="status" id="imp-status" aria-live="polite"></div>
   </section>
 
   <section class="sheet">
@@ -245,13 +269,25 @@ const UI = /*UI-START*/{
   "mEmpty": "senza risposta", "mPart": "manca il testo della risposta", "mDone": "risposta data",
   "none": "Nessun altro ha ancora risposto.", "teamAnswers": "Risposte del team",
   "extraH": "Altro?", "extraP": "Qualcosa che non abbiamo chiesto e che dovremmo sapere, o una domanda che secondo te è posta male.", "extraL": "La tua nota", "extraPh": "Facoltativa", "extraNone": "Ancora nessuna nota dagli altri.", "extraTeam": "Note del team",
-  "copyH": "Copia le risposte come testo", "copyP": "Le risposte di tutti, in testo semplice, per una chat o un messaggio. Se le tue risposte non si sono potute salvare qui, è il modo per passarle.", "copyB": "Copia tutte le risposte", "copied": "Copiate", "copyFallback": "Selezionate qui sotto: copiale con la tastiera.",
-  "stSaving": "Salvataggio…", "stSaved": "Salvata", "stLocal": "Tenuta solo in questo browser. Per passarla, copia le risposte come testo in fondo alla pagina.", "stLocalShort": "Tenuta solo in questo browser.", "stQuota": "Lo spazio della pagina è pieno, quindi non è stata salvata. Copia le risposte come testo in fondo.", "stError": "Non salvata: {msg}. Riprovo alla prossima modifica.", "unknownErr": "errore sconosciuto",
+  "copyH": "Copia le risposte come testo", "copyP": "Le risposte di tutti, in testo semplice, per una chat o un documento.", "copyB": "Copia tutte le risposte", "copied": "Copiate", "copyFallback": "Selezionate qui sotto: copiale con la tastiera.",
+  "stSaving": "Salvataggio…", "stSaved": "Salvata", "stLocal": "Tenuta solo in questo browser. Quando hai finito, inviala con «Invia le tue risposte» in fondo alla pagina.", "stLocalShort": "Tenuta solo in questo browser.", "stQuota": "Lo spazio della pagina è pieno, quindi non è stata salvata. Copia le risposte come testo in fondo.", "stError": "Non salvata: {msg}. Riprovo alla prossima modifica.", "unknownErr": "errore sconosciuto",
   "bConnecting": "Collegamento alle risposte condivise…",
-  "bNoClaude": "Questa pagina salva le risposte solo quando è aperta su claude.ai. Le tue risposte restano in questo browser: copiale come testo in fondo.",
-  "bNoIdentity": "Le risposte si salvano solo per chi ha fatto l’accesso a claude.ai e ha accesso a questa pagina. Le tue restano in questo browser: copiale come testo in fondo.",
-  "bNoWrite": "Puoi leggere le risposte di tutti, ma il tuo accesso non ti permette di salvare le tue. Chiedi all’owner l’accesso da Contributor, oppure copia le tue risposte come testo in fondo.",
-  "bRejected": "Il tuo accesso a questa pagina ti permette di leggere le risposte ma non di salvare le tue. Chiedi all’owner l’accesso da Contributor, oppure copia le tue risposte come testo in fondo.",
+  "bNoClaude": "Questa pagina salva le risposte solo quando è aperta su claude.ai. Le tue restano in questo browser: quando hai finito, inviale come messaggio.",
+  "bSignedOut": "Senza l’accesso a claude.ai non vedi le risposte del team e le tue non si salvano qui. Restano in questo browser: quando hai finito, inviale come messaggio.",
+  "bNoIdentity": "Vedi le risposte del team, ma claude.ai non ti riconosce su questa pagina, quindi le tue non si salvano qui. Restano in questo browser: quando hai finito, inviale come messaggio.",
+  "bNoWrite": "Vedi le risposte del team, ma il tuo accesso non ti permette di salvare le tue. Restano in questo browser: quando hai finito, inviale come messaggio.",
+  "bRejected": "Il tuo accesso a questa pagina non ti permette di salvare le risposte. Le tue restano in questo browser: quando hai finito, inviale come messaggio.",
+  "sendGo": "Invia le tue risposte",
+  "sendH": "Invia le tue risposte", "sendP": "Le tue risposte non si salvano in questa pagina. Scrivi il tuo nome e prepara il messaggio: contiene le tue risposte e un codice. Mandalo a chi ti ha condiviso la pagina, per email o in chat, e le aggiungerà a quelle del team con il tuo nome.",
+  "sendNameL": "Il tuo nome", "sendNamePh": "Nome e cognome", "sendB": "Prepara il messaggio", "sendCopy": "Copia il messaggio",
+  "sendReady": "Il messaggio è pronto: copialo e mandalo a chi ti ha condiviso la pagina.", "sendStale": "Hai cambiato le risposte: prepara di nuovo il messaggio.",
+  "sendNeedName": "Scrivi il tuo nome.", "sendNeedAnswer": "Rispondi almeno a una domanda, poi prepara il messaggio.",
+  "sendMsgHead": "{title}: le risposte di {name}", "sendCodeL": "Codice per aggiungere queste risposte alla pagina (lascialo com’è):",
+  "impH": "Aggiungi risposte arrivate per messaggio", "impP": "Solo tu vedi questa parte. Incolla il messaggio di chi non poteva salvare qui: le sue risposte si aggiungono a quelle del team con il suo nome.",
+  "impPh": "Incolla qui il messaggio", "impRead": "Leggi il messaggio", "impSave": "Aggiungi le risposte", "impUpdate": "Sostituisci le sue risposte",
+  "impPreview": "{name}: {n} risposte su {total}.", "impPreviewUpd": "{name}: {n} risposte su {total}. Ci sono già sue risposte arrivate per messaggio: queste le sostituiscono.",
+  "impSaved": "Aggiunte le risposte di {name}.", "impNone": "Il messaggio non contiene risposte.", "impBad": "Nel messaggio non trovo un codice valido. Incollalo tutto, senza modificarlo.", "impOther": "Questo codice è di un altro questionario.",
+  "guestTag": "via messaggio",
   "bRevoked": "Questa pagina non raggiunge più le risposte condivise.", "bStopped": "Le risposte condivise non si aggiornano più. Ricarica la pagina per ricollegarti.",
   "loading": "Caricamento…", "whoAs": "Rispondi come {name}", "whoYou": "te", "whoGuest": "Rispondi come ospite", "whoOut": "Accesso non effettuato",
   "you": "Tu", "someone": "Qualcuno",
@@ -281,13 +317,25 @@ const UI = /*UI-START*/{
   "mEmpty": "not answered", "mPart": "the answer needs its text", "mDone": "answered",
   "none": "No one else has answered yet.", "teamAnswers": "Answers from the team",
   "extraH": "Anything else?", "extraP": "Anything we didn't ask that we should know, or a question you think is framed wrong.", "extraL": "Your note", "extraPh": "Optional", "extraNone": "No notes from others yet.", "extraTeam": "Notes from the team",
-  "copyH": "Copy the answers as text", "copyP": "Everyone's answers, as plain text, for a chat or a message. If your answers couldn't be saved here, this is how to pass them on.", "copyB": "Copy all answers", "copied": "Copied", "copyFallback": "Selected below: copy it with your keyboard.",
-  "stSaving": "Saving…", "stSaved": "Saved", "stLocal": "Kept in this browser only. Copy the answers as text at the end of the page to pass them on.", "stLocalShort": "Kept in this browser only.", "stQuota": "The page's storage is full, so this wasn't saved. Copy your answers as text at the end.", "stError": "Not saved: {msg}. It will try again on your next change.", "unknownErr": "unknown error",
+  "copyH": "Copy the answers as text", "copyP": "Everyone's answers, as plain text, for a chat or a document.", "copyB": "Copy all answers", "copied": "Copied", "copyFallback": "Selected below: copy it with your keyboard.",
+  "stSaving": "Saving…", "stSaved": "Saved", "stLocal": "Kept in this browser only. When you're done, send it with «Send your answers» at the end of the page.", "stLocalShort": "Kept in this browser only.", "stQuota": "The page's storage is full, so this wasn't saved. Copy your answers as text at the end.", "stError": "Not saved: {msg}. It will try again on your next change.", "unknownErr": "unknown error",
   "bConnecting": "Connecting to the shared answers…",
-  "bNoClaude": "This page saves answers only when it is opened on claude.ai. Your answers here are kept in this browser; copy them as text at the end.",
-  "bNoIdentity": "Answers can be saved only by people signed in to claude.ai with access to this page. Yours are kept in this browser; copy them as text at the end.",
-  "bNoWrite": "You can read everyone's answers, but your access doesn't let you save your own. Ask the owner for Contributor access, or copy your answers as text at the end.",
-  "bRejected": "Your access to this page lets you read the answers but not save your own. Ask the owner for Contributor access, or copy your answers as text at the end.",
+  "bNoClaude": "This page saves answers only when it is opened on claude.ai. Yours are kept in this browser; when you're done, send them as a message.",
+  "bSignedOut": "Without signing in to claude.ai you can't see the team's answers, and yours aren't saved here. They're kept in this browser; when you're done, send them as a message.",
+  "bNoIdentity": "You can see the team's answers, but claude.ai doesn't identify you on this page, so yours aren't saved here. They're kept in this browser; when you're done, send them as a message.",
+  "bNoWrite": "You can see the team's answers, but your access doesn't let you save your own. They're kept in this browser; when you're done, send them as a message.",
+  "bRejected": "Your access to this page doesn't let you save answers. Yours are kept in this browser; when you're done, send them as a message.",
+  "sendGo": "Send your answers",
+  "sendH": "Send your answers", "sendP": "Your answers aren't saved on this page. Write your name and make the message: it holds your answers and a code. Send it to whoever shared the page with you, by email or in a chat, and they'll add it to the team's answers under your name.",
+  "sendNameL": "Your name", "sendNamePh": "First and last name", "sendB": "Make the message", "sendCopy": "Copy the message",
+  "sendReady": "The message is ready: copy it and send it to whoever shared the page with you.", "sendStale": "You changed your answers: make the message again.",
+  "sendNeedName": "Write your name.", "sendNeedAnswer": "Answer at least one question, then make the message.",
+  "sendMsgHead": "{title}: answers from {name}", "sendCodeL": "Code to add these answers to the page (leave it as it is):",
+  "impH": "Add answers sent as a message", "impP": "Only you see this part. Paste the message from someone who couldn't save here: their answers join the team's under their name.",
+  "impPh": "Paste the message here", "impRead": "Read the message", "impSave": "Add the answers", "impUpdate": "Replace their answers",
+  "impPreview": "{name}: {n} of {total} answered.", "impPreviewUpd": "{name}: {n} of {total} answered. Answers they sent before are already here; these replace them.",
+  "impSaved": "Added the answers from {name}.", "impNone": "The message holds no answers.", "impBad": "I can't find a valid code in the message. Paste all of it, unchanged.", "impOther": "This code belongs to a different questionnaire.",
+  "guestTag": "via message",
   "bRevoked": "This page can no longer reach the shared answers.", "bStopped": "The shared answers stopped updating. Reload the page to reconnect.",
   "loading": "Loading…", "whoAs": "Answering as {name}", "whoYou": "you", "whoGuest": "Answering as a guest", "whoOut": "Not signed in",
   "you": "You", "someone": "Someone",
@@ -298,7 +346,7 @@ const UI = /*UI-START*/{
 const C = CONFIG;
 const LANGS = C.languages && C.languages.length ? C.languages : ["en"];
 const KEY = C.id || "questionnaire";
-const LS_KEY = KEY + ":answers", LANG_KEY = KEY + ":lang";
+const LS_KEY = KEY + ":answers", LANG_KEY = KEY + ":lang", NAME_KEY = KEY + ":name", GID_KEY = KEY + ":gid";
 const GROUPS = {}; for (const g of C.groups || []) GROUPS[g.key] = g.label;
 // Kinds: "decision" (a recommendation: yes / different / not sure), "choice" (the config's own options), "open" (a written answer).
 const QS = C.questions.map(q => Object.assign({}, q, {kind: q.kind || (q.options ? "choice" : "decision")}));
@@ -307,7 +355,8 @@ const byId = {}; for (const q of QS) byId[q.id] = q;
 const S = {
   lang: LANGS[0],
   db: null, user: null, myId: null, me: null,
-  canSave: false,
+  canSave: false, isOwner: false,
+  gid: null, imp: null,   // this browser's id for answers sent as a message; a pasted message waiting to be added
   responses: {},          // uid -> doc body
   mine: {answers: {}, extra: null},
   touched: new Set(), loaded: false,
@@ -322,6 +371,11 @@ const S = {
 const WIDE = matchMedia("(min-width: 980px)");
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+function say(node, key, vars, bad) {
+  if (!key) { delete node.dataset.key; delete node.dataset.vars; node.textContent = ""; node.classList.remove("bad"); return; }
+  node.dataset.key = key; node.dataset.vars = vars ? JSON.stringify(vars) : "";
+  node.textContent = t(key, vars); node.classList.toggle("bad", !!bad);
+}
 function fill(s, vars) { if (vars) for (const [k, v] of Object.entries(vars)) s = s.split("{" + k + "}").join(String(v)); return s; }
 function t(key, vars) {
   const own = C.ui && C.ui[S.lang] && C.ui[S.lang][key];
@@ -404,7 +458,7 @@ function applyLang() {
     for (const o of optionsFor(q)) card.querySelector('[data-pick="' + o.key + '"]').textContent = o.label;
   }
   renderBanner(); renderWho(); renderStatus();
-  const cs = $("#copy-status"); if (cs.dataset.key) cs.textContent = t(cs.dataset.key);
+  for (const n of document.querySelectorAll("[data-key]")) n.textContent = t(n.dataset.key, n.dataset.vars ? JSON.parse(n.dataset.vars) : null);
 }
 
 // ---------- static render ----------
@@ -468,6 +522,13 @@ function renderQuestions() {
   for (const b of document.querySelectorAll(".chipbtn")) b.addEventListener("click", () => { S.filter = b.dataset.f; for (const x of document.querySelectorAll(".chipbtn")) x.setAttribute("aria-pressed", String(x === b)); applyFilter(); });
   for (const b of document.querySelectorAll("#fab button")) b.addEventListener("click", () => onFab(b.dataset.go));
   $("#copy").addEventListener("click", onCopy);
+  $("#banner-go").addEventListener("click", goSend);
+  $("#send-make").addEventListener("click", onSendMake);
+  $("#send-copy").addEventListener("click", onSendCopy);
+  $("#send-name").addEventListener("input", e => { try { localStorage.setItem(NAME_KEY, e.target.value); } catch (_) {} });
+  $("#imp-read").addEventListener("click", onImpRead);
+  $("#imp-save").addEventListener("click", onImpSave);
+  $("#imp-text").addEventListener("input", () => { S.imp = null; $("#imp-save").hidden = true; say($("#imp-status")); });
 }
 
 // ---------- local edits ----------
@@ -690,7 +751,7 @@ function renderStatus() {
   }
 }
 function scheduleSave(ms) {
-  if (!S.canSave) { saveLocal(); markAll("stLocal"); return; }
+  if (!S.canSave) { saveLocal(); markAll("stLocal"); staleSend(); return; }
   clearTimeout(S.timer); markAll("stSaving");
   S.timer = setTimeout(flush, ms);
 }
@@ -712,38 +773,65 @@ async function flush() {
   if (S.dirty) flush();
 }
 function saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(S.mine)); } catch (_) {} }
-function loadLocal() { try { const v = JSON.parse(localStorage.getItem(LS_KEY) || "null"); if (v && v.answers) { S.mine = v; Object.keys(v.answers).forEach(k => S.touched.add(k)); } } catch (_) {} }
-function setBanner(key, kind) { S.banner = key ? {key, kind} : null; renderBanner(); }
+// Answers kept in this browser while the page couldn't save them; a config's legacyLocalKey reads an older page's.
+function readLocal() {
+  for (const k of [LS_KEY, C.legacyLocalKey]) {
+    if (!k) continue;
+    try { const v = JSON.parse(localStorage.getItem(k) || "null"); if (v && v.answers && typeof v.answers === "object") return {answers: v.answers, extra: v.extra || null}; } catch (_) {}
+  }
+  return null;
+}
+function loadLocal() { const v = readLocal(); if (v) { S.mine = v; Object.keys(v.answers).forEach(k => S.touched.add(k)); if (v.extra) S.touched.add("extra"); } }
+function clearLocal() { for (const k of [LS_KEY, C.legacyLocalKey]) if (k) try { localStorage.removeItem(k); } catch (_) {} }
+// Someone who can save now brings along what they answered here before: the newer of the two answers wins.
+function adoptLocal(saved) {
+  const v = readLocal(); if (!v) return false;
+  let took = false;
+  for (const [id, a] of Object.entries(v.answers)) {
+    if (!byId[id] || !a) continue;
+    const b = saved && saved.answers && saved.answers[id];
+    if (!b || String(a.at || "") > String(b.at || "")) { S.mine.answers[id] = Object.assign({}, a); S.touched.add(id); took = true; }
+  }
+  const b = saved && saved.extra;
+  if (v.extra && (!b || String(v.extra.at || "") > String(b.at || ""))) { S.mine.extra = Object.assign({}, v.extra); S.touched.add("extra"); took = true; }
+  return took;
+}
+function setBanner(key, kind, go) { S.banner = key ? {key, kind, go: !!go} : null; renderBanner(); }
 function renderBanner() {
   const b = $("#banner");
   if (!S.banner) { b.hidden = true; return; }
-  b.hidden = false; b.className = "banner " + S.banner.kind; b.textContent = t(S.banner.key);
+  b.hidden = false; b.className = "banner " + S.banner.kind; $("#banner-text").textContent = t(S.banner.key);
+  $("#banner-go").hidden = !S.banner.go;
 }
-function goLocal(key) { S.canSave = false; setBanner(key, "warn"); saveLocal(); markAll("stLocalShort"); }
+// The page can't save for this person: keep their answers here and offer to send them as a message.
+function goLocal(key) { S.canSave = false; setBanner(key, "warn", true); $("#send").hidden = false; saveLocal(); markAll("stLocalShort"); }
 
 // ---------- who ----------
 function renderWho() {
   const who = $("#who"); who.replaceChildren();
   if (S.who === "loading") who.append(el("span", null, t("loading")));
   else if (S.who === "out") who.append(el("span", null, t("whoOut")));
-  else if (S.me) { const img = document.createElement("img"); img.alt = ""; img.src = S.me.avatarUrl; who.append(img, el("span", null, t("whoAs", {name: S.me.name || t("whoYou")}))); }
+  else if (S.me && S.myId) { const img = document.createElement("img"); img.alt = ""; img.src = S.me.avatarUrl; who.append(img, el("span", null, t("whoAs", {name: S.me.name || t("whoYou")}))); }
   else who.append(el("span", null, t("whoGuest")));
 }
 
 // ---------- shared state render ----------
-function allAnswerers() {
-  const out = [];
-  for (const [uid, doc] of Object.entries(S.responses)) { if (uid !== S.myId) out.push([uid, doc]); }
-  out.push([S.myId || "you", S.mine]);
-  return out;
-}
+// Answers that came by message live under "guest-<id>"; the id is the sender's browser, so a sender who reopens the page sees them as theirs.
+const isGuest = uid => uid.startsWith("guest-");
+const isMe = uid => uid === S.myId || (!S.canSave && !!S.gid && uid === "guest-" + S.gid);
+function teammates() { return Object.entries(S.responses).filter(([uid, d]) => !isMe(uid) && d); }
+function allAnswerers() { return teammates().concat([[S.myId || "you", S.mine]]); }
 function answeredBy(id) { return allAnswerers().filter(([, d]) => d && d.answers && d.answers[id] && d.answers[id].pick); }
 async function resolveProfiles() {
-  const ids = Object.keys(S.responses).concat(S.myId ? [S.myId] : []);
+  const ids = Object.keys(S.responses).filter(uid => !isGuest(uid)).concat(S.myId ? [S.myId] : []);
   if (S.user && ids.length) { try { S.profiles = await S.user.profiles(ids); } catch (_) {} }
 }
-function nameOf(uid) { if (uid === S.myId || uid === "you") return t("you"); const p = S.profiles[uid]; return (p && p.name) || t("someone"); }
-function avatarOf(uid) { const p = uid === S.myId && S.me ? S.me : S.profiles[uid]; return p && p.avatarUrl ? p.avatarUrl : ""; }
+function nameOf(uid) {
+  if (uid === "you" || isMe(uid)) return t("you");
+  if (isGuest(uid)) { const d = S.responses[uid]; return ((d && typeof d.guestName === "string" && d.guestName.trim()) || t("someone")) + " · " + t("guestTag"); }
+  const p = S.profiles[uid]; return (p && p.name) || t("someone");
+}
+function avatarOf(uid) { if (isGuest(uid)) return ""; const p = uid === S.myId && S.me ? S.me : S.profiles[uid]; return p && p.avatarUrl ? p.avatarUrl : ""; }
 function answerRow(q, uid, a) {
   const row = el("div", "ans"); const img = document.createElement("img"); img.alt = ""; const src = avatarOf(uid); if (src) img.src = src; else img.style.visibility = "hidden";
   const txt = el("div"); txt.append(el("span", "who2", nameOf(uid)));
@@ -762,7 +850,7 @@ function refreshCard(id, keepText) {
   ta.placeholder = writing ? t("notePhOpen") : t("notePh");
   ta.classList.toggle("need", !!(o && o.needsNote && !writing && !(a.note || "").trim()));
   const others = card.querySelector("[data-role=others]"); others.replaceChildren();
-  const list = Object.entries(S.responses).filter(([uid, d]) => uid !== S.myId && d && d.answers && d.answers[id] && (d.answers[id].pick || (d.answers[id].note || "").trim()));
+  const list = teammates().filter(([, d]) => d.answers && d.answers[id] && (d.answers[id].pick || (d.answers[id].note || "").trim()));
   if (!list.length) others.append(el("div", "none", t("none")));
   else { others.append(el("div", "small", t("teamAnswers"))); for (const [uid, d] of list) others.append(answerRow(q, uid, d.answers[id])); }
   const sumText = card.querySelector("[data-role=sumtext]"); sumText.replaceChildren();
@@ -776,7 +864,7 @@ function refreshCard(id, keepText) {
 }
 function refreshExtra() {
   const box = $("#extra-others"); box.replaceChildren();
-  const list = Object.entries(S.responses).filter(([uid, d]) => uid !== S.myId && d && d.extra && (d.extra.note || "").trim());
+  const list = teammates().filter(([, d]) => d.extra && (d.extra.note || "").trim());
   if (list.length) { box.append(el("div", "small", t("extraTeam"))); for (const [uid, d] of list) box.append(answerRow(null, uid, {note: d.extra.note})); }
   else box.append(el("div", "none", t("extraNone")));
   const ta = $("#extra-note"); if (document.activeElement !== ta) ta.value = S.mine.extra && S.mine.extra.note ? S.mine.extra.note : "";
@@ -793,10 +881,14 @@ function refreshSummary() {
     else tag.hidden = true;
   }
   const ppl = $("#people"); ppl.replaceChildren();
-  const others = Object.entries(S.responses).filter(([uid, d]) => uid !== S.myId && d && d.answers);
-  if (others.length) {
+  const people = teammates().filter(([, d]) => d.answers);
+  if (people.length) {
     ppl.append(el("span", null, t("answeredSoFar")));
-    for (const [uid, d] of others) { const n = Object.values(d.answers).filter(a => a && a.pick).length; const s = el("span"); const img = document.createElement("img"); img.alt = ""; const src = avatarOf(uid); if (src) img.src = src; s.append(img, document.createTextNode(`${nameOf(uid)} · ${n}`)); ppl.append(s); }
+    for (const [uid, d] of people) {
+      const n = Object.values(d.answers).filter(a => a && a.pick).length; const s = el("span"); const src = avatarOf(uid);
+      if (src) { const img = document.createElement("img"); img.alt = ""; img.src = src; s.append(img); }
+      s.append(document.createTextNode(`${nameOf(uid)} · ${n}`)); ppl.append(s);
+    }
   }
   applyFilter(); refreshToc(); queueSpy();
 }
@@ -818,6 +910,13 @@ async function refreshAll() {
 }
 
 // ---------- copy ----------
+const oneLine = s => (s || "").trim().replace(/\s+/g, " ");
+function answerText(q, a) {
+  const o = a.pick ? optionOf(q, a.pick) : null;
+  const what = isWritten(q, a) ? "" : a.pick ? (o ? o.short : a.pick) : t("short_note");
+  return [what, oneLine(a.note)].filter(Boolean).join(" — ");
+}
+const hasAnswer = a => !!a && (!!a.pick || !!(a.note || "").trim());
 function asText() {
   const lines = [t("txtHead", {title: ct("heading") || C.title}), ""];
   const people = allAnswerers();
@@ -825,26 +924,122 @@ function asText() {
     lines.push(`${q.id} ${words(q).title}`);
     let any = false;
     for (const [uid, d] of people) {
-      const a = d && d.answers && d.answers[q.id]; if (!a || (!a.pick && !(a.note || "").trim())) continue; any = true;
-      const o = a.pick ? optionOf(q, a.pick) : null;
-      const what = isWritten(q, a) ? "" : a.pick ? (o ? o.short : a.pick) : t("short_note");
-      const note = (a.note || "").trim().replace(/\s+/g, " ");
-      lines.push(`- ${nameOf(uid)}: ${[what, note].filter(Boolean).join(" — ")}`);
+      const a = d && d.answers && d.answers[q.id]; if (!hasAnswer(a)) continue; any = true;
+      lines.push(`- ${nameOf(uid)}: ${answerText(q, a)}`);
     }
     if (!any) lines.push(t("txtNone"));
     lines.push("");
   }
   const notes = people.filter(([, d]) => d && d.extra && (d.extra.note || "").trim());
-  if (notes.length) { lines.push(t("txtExtra")); for (const [uid, d] of notes) lines.push(`- ${nameOf(uid)}: ${d.extra.note.trim().replace(/\s+/g, " ")}`); }
+  if (notes.length) { lines.push(t("txtExtra")); for (const [uid, d] of notes) lines.push(`- ${nameOf(uid)}: ${oneLine(d.extra.note)}`); }
   return lines.join("\n");
 }
-function onCopy() {
-  const text = asText(); const out = $("#copyout"); const st = $("#copy-status");
-  const show = key => { st.dataset.key = key; st.textContent = t(key); };
-  const fallback = () => { out.hidden = false; out.value = text; out.focus(); out.select(); show("copyFallback"); };
+// Copies inside the click; where the clipboard is refused, the text is shown selected for the keyboard.
+function copyOut(text, out, st, keep) {
+  const fallback = () => { out.hidden = false; out.value = text; out.focus(); out.select(); say(st, "copyFallback"); };
+  try { navigator.clipboard.writeText(text).then(() => { say(st, "copied"); if (!keep) out.hidden = true; }, fallback); }
+  catch (_) { fallback(); }
+}
+function onCopy() { copyOut(asText(), $("#copyout"), $("#copy-status")); }
+
+// ---------- answers sent as a message ----------
+// The code is the sender's answers as JSON, deflated where the browser can, in base64url between "IQ1.<z|j>." and ".END".
+// Line breaks a mail client adds are ignored when it's read back. scripts/import_answers.py reads the same code.
+const CODE_RE = /IQ1\.([zj])\.([A-Za-z0-9_-]+)\.END/;
+function b64u(bytes) {
+  let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function unb64u(s) {
+  s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "=";
+  const bin = atob(s); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out;
+}
+async function pipe(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
+async function encodeAnswers(payload) {
+  const raw = new TextEncoder().encode(JSON.stringify(payload));
+  try { if (typeof CompressionStream === "function") return "IQ1.z." + b64u(await pipe(raw, new CompressionStream("deflate-raw"))) + ".END"; } catch (_) {}
+  return "IQ1.j." + b64u(raw) + ".END";
+}
+async function decodeAnswers(text) {
+  const m = CODE_RE.exec(String(text).replace(/\s+/g, "")); if (!m) return null;
+  let bytes = unb64u(m[2]);
+  if (m[1] === "z") bytes = await pipe(bytes, new DecompressionStream("deflate-raw"));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+// A pasted code is someone else's text: keep only known questions, valid picks and bounded notes.
+const AT_RE = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/;
+const cleanAt = v => typeof v === "string" && AT_RE.test(v) ? v : now();
+const cleanNote = v => typeof v === "string" ? v.slice(0, 4000) : "";
+function cleanPayload(p) {
+  if (!p || typeof p !== "object" || p.v !== 1) return {error: "impBad"};
+  if (p.q !== KEY) return {error: "impOther"};
+  const gid = typeof p.gid === "string" && /^[a-z0-9]{8,32}$/.test(p.gid) ? p.gid : null;
+  const name = typeof p.name === "string" ? oneLine(p.name).slice(0, 80) : "";
+  if (!gid || !name) return {error: "impBad"};
+  const answers = {};
+  for (const q of QS) {
+    const a = p.answers && typeof p.answers === "object" ? p.answers[q.id] : null;
+    if (!a || typeof a !== "object") continue;
+    const pick = typeof a.pick === "string" && optionOf(q, a.pick) ? a.pick : null;
+    const note = cleanNote(a.note);
+    if (pick || note.trim()) answers[q.id] = {pick, note, at: cleanAt(a.at)};
+  }
+  const en = p.extra && typeof p.extra === "object" ? cleanNote(p.extra.note) : "";
+  const extra = en.trim() ? {note: en, at: cleanAt(p.extra.at)} : null;
+  if (!Object.keys(answers).length && !extra) return {error: "impNone"};
+  return {gid, name, answers, extra, at: cleanAt(p.at)};
+}
+function myGid() {
+  if (S.gid) return S.gid;
+  try { const v = localStorage.getItem(GID_KEY); if (v && /^[a-z0-9]{8,32}$/.test(v)) return S.gid = v; } catch (_) {}
+  const a = new Uint8Array(16); crypto.getRandomValues(a);
+  S.gid = Array.from(a, b => "abcdefghijklmnopqrstuvwxyz0123456789"[b % 36]).join("");
+  try { localStorage.setItem(GID_KEY, S.gid); } catch (_) {}
+  return S.gid;
+}
+function goSend() {
+  const box = $("#send"); box.hidden = false;
+  box.scrollIntoView({behavior: reduceMotion() ? "auto" : "smooth", block: "start"});
+  $("#send-name").focus({preventScroll: true});
+}
+function staleSend() {
+  if ($("#send-out").hidden) return;
+  $("#send-out").hidden = true; $("#send-copy").hidden = true; say($("#send-copied")); say($("#send-status"), "sendStale");
+}
+async function onSendMake() {
+  const name = oneLine($("#send-name").value).slice(0, 80); const st = $("#send-status");
+  if (!name) { say(st, "sendNeedName", null, true); $("#send-name").focus(); return; }
+  const answers = {};
+  for (const q of QS) { const a = myAnswer(q.id); if (hasAnswer(a)) answers[q.id] = a; }
+  const extra = S.mine.extra && (S.mine.extra.note || "").trim() ? S.mine.extra : null;
+  if (!Object.keys(answers).length && !extra) { say(st, "sendNeedAnswer", null, true); return; }
+  const code = await encodeAnswers({v: 1, q: KEY, gid: myGid(), name, answers, extra, at: now()});
+  const lines = [t("sendMsgHead", {title: ct("heading") || C.title, name}), ""];
+  for (const q of QS) if (answers[q.id]) lines.push(`${q.id} ${words(q).title}: ${answerText(q, answers[q.id])}`);
+  if (extra) lines.push(`${t("txtExtra")}: ${oneLine(extra.note)}`);
+  lines.push("", t("sendCodeL"), code);
+  const out = $("#send-out"); out.value = lines.join("\n"); out.hidden = false;
+  $("#send-copy").hidden = false; say($("#send-copied")); say(st, "sendReady");
+}
+function onSendCopy() { const out = $("#send-out"); copyOut(out.value, out, $("#send-copied"), true); }
+async function onImpRead() {
+  const st = $("#imp-status"); const save = $("#imp-save"); S.imp = null; save.hidden = true;
+  let p = null; try { p = await decodeAnswers($("#imp-text").value); } catch (_) {}
+  const c = cleanPayload(p);
+  if (c.error) { say(st, c.error, null, true); return; }
+  S.imp = c;
+  const exists = !!S.responses["guest-" + c.gid];
+  say(st, exists ? "impPreviewUpd" : "impPreview", {name: c.name, n: Object.keys(c.answers).length, total: QS.length});
+  say(save, exists ? "impUpdate" : "impSave"); save.hidden = false; save.focus();
+}
+async function onImpSave() {
+  const c = S.imp; if (!c) return;
+  const st = $("#imp-status"); const save = $("#imp-save"); save.disabled = true;
   try {
-    navigator.clipboard.writeText(text).then(() => { show("copied"); out.hidden = true; }, fallback);
-  } catch (_) { fallback(); }
+    await S.db.doc("responses/guest-" + c.gid).set({answers: c.answers, extra: c.extra, updatedAt: c.at, guestName: c.name, importedAt: now()});
+    S.imp = null; save.hidden = true; $("#imp-text").value = ""; say(st, "impSaved", {name: c.name});
+  } catch (e) { say(st, "stError", {msg: e && e.message ? e.message : t("unknownErr")}, true); }
+  save.disabled = false;
 }
 
 // ---------- boot ----------
@@ -859,28 +1054,38 @@ async function boot() {
   try { WIDE.addEventListener("change", () => setDrawer(false)); } catch (_) { WIDE.addListener(() => setDrawer(false)); }
   addEventListener("scroll", queueSpy, {passive: true});
   refreshSummary(); refreshExtra(); for (const q of QS) refreshCard(q.id);
+  try { $("#send-name").value = localStorage.getItem(NAME_KEY) || ""; const g = localStorage.getItem(GID_KEY); if (g) S.gid = g; } catch (_) {}
   const c = window.claude;
   if (!c || typeof c.use !== "function") { S.who = "out"; renderWho(); loadLocal(); goLocal("bNoClaude"); refreshAll().then(enableAnim); return; }
   const [db, user] = await Promise.all([c.use("db"), c.use("user")]);
   S.db = db; S.user = user;
-  S.me = user ? await user.me() : null; S.myId = S.me && S.me.id;
+  S.me = user ? await user.me() : null; S.myId = (S.me && S.me.id) || null;
+  S.isOwner = !!(S.me && S.me.isOwner);
+  // A signed-out visitor gets no store at all: they answer here and send the answers as a message.
+  if (!db) { S.who = "out"; renderWho(); loadLocal(); goLocal("bSignedOut"); refreshAll().then(enableAnim); return; }
   S.who = "ready"; renderWho();
-  if (!db || !S.myId) { loadLocal(); goLocal("bNoIdentity"); refreshAll().then(enableAnim); return; }
-  const may = user ? await user.can("data.write") : null;
-  S.canSave = may !== false;
-  if (!S.canSave) goLocal("bNoWrite");
-  else setBanner(null);
+  if (S.me && S.me.name && !$("#send-name").value) $("#send-name").value = S.me.name;
+  $("#import").hidden = !S.isOwner;
+  if (!S.myId) { loadLocal(); goLocal("bNoIdentity"); }
+  else {
+    const may = user ? await user.can("data.write") : null;
+    S.canSave = may !== false;
+    if (!S.canSave) { loadLocal(); goLocal("bNoWrite"); }
+    else setBanner(null);
+  }
+  // Everyone the store lets read sees the team's answers, whether or not the page can save theirs.
   db.collection("responses").onSnapshot(async snap => {
     const next = {};
     for (const d of snap.docs) if (d.exists) next[d.id] = d.data();
     S.responses = next;
-    const mineDoc = next[S.myId];
+    const mineDoc = S.myId ? next[S.myId] : null;
     if (!S.loaded && (mineDoc || !snap.metadata.fromCache)) {
       S.loaded = true;
-      if (mineDoc && mineDoc.answers) {
+      if (S.canSave && mineDoc && mineDoc.answers) {
         for (const [k, v] of Object.entries(mineDoc.answers)) if (!S.touched.has(k)) S.mine.answers[k] = Object.assign({}, v);
         if (!S.touched.has("extra") && mineDoc.extra) S.mine.extra = Object.assign({}, mineDoc.extra);
       }
+      if (S.canSave && adoptLocal(mineDoc)) { clearLocal(); scheduleSave(0); }
     }
     await refreshAll();
     if (S.loaded) enableAnim();
