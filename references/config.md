@@ -98,13 +98,19 @@ The values of `pick` depend on the kind:
 
 ### Answers sent as a message
 
-Someone the page can't save for sends a message ending in a code: `IQ1.z.` (or `IQ1.j.` where the browser can't compress), the answers in base64url, then `.END`. Decoded, the code is:
+Someone the page can't save for sends a message that ends in a code: a line `IQ2`, groups of five letters and digits, and a closing line `IQ2`. Chat apps and mail clients reformat text (underscores turn into italics, dashes merge, quote marks and invisible characters appear, case changes), so the code is built to survive that:
+
+- **Letters and digits only,** in Crockford base32 (`0-9` and `A-Z` without `I`, `L`, `O` and `U`). Reading it back drops every other character, ignores case, and takes `O` as `0` and `I` or `L` as `1`.
+- **A checksum:** the decoded bytes are one kind byte (`1` JSON, `2` raw-deflated JSON), the data, and a big-endian CRC32 of both. A code that lost or changed a character is refused as damaged, never read wrong.
+- **Pairs of marks are tried from the end,** because `IQ2` can also appear in the readable part of a message.
+
+The JSON inside is:
 
 ```json
 {"v": 1, "q": "<config id>", "gid": "<16 letters and digits>", "name": "Their name",
  "answers": {"Q7": {"pick": "yes", "note": "", "at": "…"}}, "extra": null, "at": "…"}
 ```
 
-`z` means the JSON is deflated (raw deflate, no header) before encoding. `gid` is the sender's browser, so a second message from the same person replaces the first.
+`gid` is the sender's browser, so a second message from the same person replaces the first. The first form of the code, `IQ1.z.<base64url>.END`, is still read.
 
 When the owner adds it, or Claude does with `scripts/import_answers.py`, it becomes the document `responses/guest-<gid>`, with the same fields as above plus `guestName` (the name they typed) and `importedAt`. Only known question ids, valid picks and notes up to 4,000 characters are kept, and a code for another questionnaire is refused.

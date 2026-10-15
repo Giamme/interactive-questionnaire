@@ -282,11 +282,11 @@ const UI = /*UI-START*/{
   "sendNameL": "Il tuo nome", "sendNamePh": "Nome e cognome", "sendB": "Prepara il messaggio", "sendCopy": "Copia il messaggio",
   "sendReady": "Il messaggio è pronto: copialo e mandalo a chi ti ha condiviso la pagina.", "sendStale": "Hai cambiato le risposte: prepara di nuovo il messaggio.",
   "sendNeedName": "Scrivi il tuo nome.", "sendNeedAnswer": "Rispondi almeno a una domanda, poi prepara il messaggio.",
-  "sendMsgHead": "{title}: le risposte di {name}", "sendCodeL": "Codice per aggiungere queste risposte alla pagina (lascialo com’è):",
+  "sendMsgHead": "{title}: le risposte di {name}", "sendCodeL": "Codice per aggiungere queste risposte alla pagina (copialo tutto, fino all’ultima riga):",
   "impH": "Aggiungi risposte arrivate per messaggio", "impP": "Solo tu vedi questa parte. Incolla il messaggio di chi non poteva salvare qui: le sue risposte si aggiungono a quelle del team con il suo nome.",
   "impPh": "Incolla qui il messaggio", "impRead": "Leggi il messaggio", "impSave": "Aggiungi le risposte", "impUpdate": "Sostituisci le sue risposte",
-  "impPreview": "{name}: {n} risposte su {total}.", "impPreviewUpd": "{name}: {n} risposte su {total}. Ci sono già sue risposte arrivate per messaggio: queste le sostituiscono.",
-  "impSaved": "Aggiunte le risposte di {name}.", "impNone": "Il messaggio non contiene risposte.", "impBad": "Nel messaggio non trovo un codice valido. Incollalo tutto, senza modificarlo.", "impOther": "Questo codice è di un altro questionario.",
+  "impPreview": "{name}: domande con risposta {n} su {total}.", "impPreviewUpd": "{name}: domande con risposta {n} su {total}. Ci sono già sue risposte arrivate per messaggio: queste le sostituiscono.",
+  "impSaved": "Aggiunte le risposte di {name}.", "impNone": "Il messaggio non contiene risposte.", "impBad": "Nel messaggio non trovo un codice. Incolla tutto il messaggio, dalla prima all’ultima riga IQ2.", "impDamaged": "Il codice nel messaggio è incompleto o alterato. Chiedi a chi l’ha mandato di copiarlo di nuovo dalla pagina e rimandarlo.", "impOther": "Questo codice è di un altro questionario.",
   "guestTag": "via messaggio",
   "bRevoked": "Questa pagina non raggiunge più le risposte condivise.", "bStopped": "Le risposte condivise non si aggiornano più. Ricarica la pagina per ricollegarti.",
   "loading": "Caricamento…", "whoAs": "Rispondi come {name}", "whoYou": "te", "whoGuest": "Rispondi come ospite", "whoOut": "Accesso non effettuato",
@@ -330,11 +330,11 @@ const UI = /*UI-START*/{
   "sendNameL": "Your name", "sendNamePh": "First and last name", "sendB": "Make the message", "sendCopy": "Copy the message",
   "sendReady": "The message is ready: copy it and send it to whoever shared the page with you.", "sendStale": "You changed your answers: make the message again.",
   "sendNeedName": "Write your name.", "sendNeedAnswer": "Answer at least one question, then make the message.",
-  "sendMsgHead": "{title}: answers from {name}", "sendCodeL": "Code to add these answers to the page (leave it as it is):",
+  "sendMsgHead": "{title}: answers from {name}", "sendCodeL": "Code to add these answers to the page (copy all of it, down to the last line):",
   "impH": "Add answers sent as a message", "impP": "Only you see this part. Paste the message from someone who couldn't save here: their answers join the team's under their name.",
   "impPh": "Paste the message here", "impRead": "Read the message", "impSave": "Add the answers", "impUpdate": "Replace their answers",
   "impPreview": "{name}: {n} of {total} answered.", "impPreviewUpd": "{name}: {n} of {total} answered. Answers they sent before are already here; these replace them.",
-  "impSaved": "Added the answers from {name}.", "impNone": "The message holds no answers.", "impBad": "I can't find a valid code in the message. Paste all of it, unchanged.", "impOther": "This code belongs to a different questionnaire.",
+  "impSaved": "Added the answers from {name}.", "impNone": "The message holds no answers.", "impBad": "I can't find a code in the message. Paste the whole message, from the first IQ2 line to the last.", "impDamaged": "The code in the message is incomplete or altered. Ask the sender to copy it again from the page and send it again.", "impOther": "This code belongs to a different questionnaire.",
   "guestTag": "via message",
   "bRevoked": "This page can no longer reach the shared answers.", "bStopped": "The shared answers stopped updating. Reload the page to reconnect.",
   "loading": "Loading…", "whoAs": "Answering as {name}", "whoYou": "you", "whoGuest": "Answering as a guest", "whoOut": "Not signed in",
@@ -943,28 +943,63 @@ function copyOut(text, out, st, keep) {
 function onCopy() { copyOut(asText(), $("#copyout"), $("#copy-status")); }
 
 // ---------- answers sent as a message ----------
-// The code is the sender's answers as JSON, deflated where the browser can, in base64url between "IQ1.<z|j>." and ".END".
-// Line breaks a mail client adds are ignored when it's read back. scripts/import_answers.py reads the same code.
-const CODE_RE = /IQ1\.([zj])\.([A-Za-z0-9_-]+)\.END/;
-function b64u(bytes) {
-  let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+// Chat apps and mail clients reformat what they carry: underscores turn into italics, dashes merge, long words get
+// broken with invisible characters, and a line can gain a capital or a quote mark. So the code uses only letters and
+// digits, in either case (Crockford base32, which has no I, L, O or U), set in short groups between two «IQ2» lines.
+// Reading it back drops everything else, and a CRC32 tells a damaged code from a good one.
+// Inside: one byte (1 = JSON, 2 = raw-deflated JSON), the data, then the CRC32 of both, big-endian.
+// scripts/import_answers.py reads the same code. «IQ1» is the first, base64url form; it is still read.
+const B32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(bytes) { let c = 0xFFFFFFFF; for (const b of bytes) c = CRC_T[(c ^ b) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function b32(bytes) {
+  let out = "", bits = 0, val = 0;
+  for (const b of bytes) { val = (val << 8) | b; bits += 8; while (bits >= 5) { bits -= 5; out += B32[(val >>> bits) & 31]; } val &= (1 << bits) - 1; }
+  return bits ? out + B32[(val << (5 - bits)) & 31] : out;
 }
-function unb64u(s) {
-  s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "=";
-  const bin = atob(s); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out;
+function unb32(s) {
+  const out = []; let bits = 0, val = 0;
+  for (const ch of s) { const i = B32.indexOf(ch); if (i < 0) return null; val = (val << 5) | i; bits += 5; if (bits >= 8) { bits -= 8; out.push((val >>> bits) & 255); } val &= (1 << bits) - 1; }
+  return new Uint8Array(out);
 }
 async function pipe(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
 async function encodeAnswers(payload) {
   const raw = new TextEncoder().encode(JSON.stringify(payload));
-  try { if (typeof CompressionStream === "function") return "IQ1.z." + b64u(await pipe(raw, new CompressionStream("deflate-raw"))) + ".END"; } catch (_) {}
-  return "IQ1.j." + b64u(raw) + ".END";
+  let kind = 1, data = raw;
+  try { if (typeof CompressionStream === "function") { data = await pipe(raw, new CompressionStream("deflate-raw")); kind = 2; } } catch (_) { kind = 1; data = raw; }
+  const pack = new Uint8Array(data.length + 5); pack[0] = kind; pack.set(data, 1);
+  new DataView(pack.buffer).setUint32(data.length + 1, crc32(pack.subarray(0, data.length + 1)));
+  const groups = b32(pack).match(/.{1,5}/g); const lines = [];
+  for (let i = 0; i < groups.length; i += 8) lines.push(groups.slice(i, i + 8).join(" "));
+  return "IQ2\n" + lines.join("\n") + "\nIQ2";
 }
+async function unpack(span) {
+  const clean = span.replace(/[^0-9A-Za-z]/g, "").toUpperCase().replace(/O/g, "0").replace(/[IL]/g, "1");
+  const pack = unb32(clean); if (!pack || pack.length < 6) return null;
+  const n = pack.length - 4;
+  if (new DataView(pack.buffer).getUint32(n) !== crc32(pack.subarray(0, n))) return null;
+  let data = pack.subarray(1, n);
+  if (pack[0] === 2) data = await pipe(data, new DecompressionStream("deflate-raw"));
+  else if (pack[0] !== 1) return null;
+  return JSON.parse(new TextDecoder().decode(data));
+}
+// The code may sit anywhere in a pasted message, which may hold «IQ2» elsewhere too: try each pair of marks, last first.
 async function decodeAnswers(text) {
-  const m = CODE_RE.exec(String(text).replace(/\s+/g, "")); if (!m) return null;
-  let bytes = unb64u(m[2]);
-  if (m[1] === "z") bytes = await pipe(bytes, new DecompressionStream("deflate-raw"));
-  return JSON.parse(new TextDecoder().decode(bytes));
+  text = String(text);
+  const marks = [...text.matchAll(/IQ2/gi)].map(m => m.index);
+  for (let k = marks.length - 1; k > 0; k--) {
+    try { const p = await unpack(text.slice(marks[k - 1] + 3, marks[k])); if (p) return {p}; } catch (_) {}
+  }
+  const old = /IQ1\.([zj])\.([A-Za-z0-9_-]+)\.END/.exec(text.replace(/[\s\u00AD\u200B-\u200D\u2060\uFEFF]+/g, ""));
+  if (old) {
+    try {
+      let s64 = old[2].replace(/-/g, "+").replace(/_/g, "/"); while (s64.length % 4) s64 += "=";
+      let bytes = Uint8Array.from(atob(s64), ch => ch.charCodeAt(0));
+      if (old[1] === "z") bytes = await pipe(bytes, new DecompressionStream("deflate-raw"));
+      return {p: JSON.parse(new TextDecoder().decode(bytes))};
+    } catch (_) { return {error: "impDamaged"}; }
+  }
+  return {error: marks.length ? "impDamaged" : "impBad"};
 }
 // A pasted code is someone else's text: keep only known questions, valid picks and bounded notes.
 const AT_RE = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/;
@@ -1024,8 +1059,8 @@ async function onSendMake() {
 function onSendCopy() { const out = $("#send-out"); copyOut(out.value, out, $("#send-copied"), true); }
 async function onImpRead() {
   const st = $("#imp-status"); const save = $("#imp-save"); S.imp = null; save.hidden = true;
-  let p = null; try { p = await decodeAnswers($("#imp-text").value); } catch (_) {}
-  const c = cleanPayload(p);
+  let d = {error: "impBad"}; try { d = await decodeAnswers($("#imp-text").value); } catch (_) {}
+  const c = d.error ? d : cleanPayload(d.p);
   if (c.error) { say(st, c.error, null, true); return; }
   S.imp = c;
   const exists = !!S.responses["guest-" + c.gid];

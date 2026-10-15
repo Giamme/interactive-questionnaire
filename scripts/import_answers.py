@@ -4,9 +4,12 @@
     python3 -I import_answers.py (--config CONFIG.json | --page PAGE.html)
                                  MESSAGE.txt [MESSAGE2.txt …] --out DIR [--writes WRITES.json]
 
-A message holds a code such as IQ1.z.<…>.END, made by the page's
-«Send your answers». A file may hold several messages; "-" reads stdin.
-Line breaks a mail client put inside a code are ignored.
+A message holds a code made by the page's «Send your answers»: groups of
+letters and digits between two lines that say IQ2. A file may hold several
+messages; "-" reads stdin. Whatever a chat app or mail client added (line
+breaks, quote marks, formatting, a change of case) is ignored, and a
+checksum catches a code that lost or changed characters. The first form of
+the code, IQ1.z.<…>.END, is still read.
 
 Each sender becomes DIR/guest-<id>.json, the same document the owner's
 «Add answers sent as a message» saves: {answers, extra, updatedAt,
@@ -34,7 +37,10 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from extract_config import extract  # noqa: E402
 
-CODE_RE = re.compile(r"IQ1\.([zj])\.([A-Za-z0-9_-]+)\.END")
+B32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"  # Crockford base32: no I, L, O or U, so "IQ2" never occurs inside a code
+MARK_RE = re.compile(r"IQ2", re.I)
+OLD_RE = re.compile(r"IQ1\.([zj])\.([A-Za-z0-9_-]+)\.END")
+INVISIBLE_RE = re.compile(r"[\s\u00ad\u200b-\u200d\u2060\ufeff]+")
 GID_RE = re.compile(r"^[a-z0-9]{8,32}$")
 AT_RE = re.compile(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$")
 
@@ -43,11 +49,58 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
-def decode(kind: str, data: str) -> dict:
-    raw = base64.urlsafe_b64decode(data + "=" * (-len(data) % 4))
-    if kind == "z":
-        raw = zlib.decompress(raw, -15)  # deflate-raw, as the browser's CompressionStream writes it
-    return json.loads(raw.decode("utf-8"))
+def unpack(span: str):
+    """One IQ2 code: one kind byte (1 JSON, 2 raw deflate), the data, then a big-endian CRC32 of both."""
+    clean = re.sub(r"[^0-9A-Za-z]", "", span).upper().replace("O", "0").replace("I", "1").replace("L", "1")
+    out, bits, val = bytearray(), 0, 0
+    for ch in clean:
+        i = B32.find(ch)
+        if i < 0:
+            return None
+        val, bits = (val << 5) | i, bits + 5
+        if bits >= 8:
+            bits -= 8
+            out.append((val >> bits) & 255)
+        val &= (1 << bits) - 1
+    if len(out) < 6 or int.from_bytes(out[-4:], "big") != zlib.crc32(out[:-4]):
+        return None
+    kind, data = out[0], bytes(out[1:-4])
+    if kind == 2:
+        data = zlib.decompress(data, -15)  # deflate-raw, as the browser's CompressionStream writes it
+    elif kind != 1:
+        return None
+    return json.loads(data.decode("utf-8"))
+
+
+def find_codes(text: str):
+    """Each code in the text as a decoded payload, or None for a text with IQ2 marks but no readable code.
+
+    Marks are paired from the end, as the page does, because "IQ2" can also turn up in someone's note
+    in the readable part of a message, which comes before its code."""
+    marks = [m.start() for m in MARK_RE.finditer(text)]
+    k, found = len(marks) - 1, []
+    while k > 0:
+        try:
+            p = unpack(text[marks[k - 1] + 3:marks[k]])
+        except (ValueError, zlib.error):
+            p = None
+        if p is not None:
+            found.append(p)
+            k -= 2
+        else:
+            k -= 1
+    yield from reversed(found)
+    if marks and not found:
+        yield None
+    elif len(marks) > 2 * len(found):
+        print(f"note: {len(marks) - 2 * len(found)} IQ2 mark(s) outside any readable code: a note that mentions IQ2,"
+              " or another message whose code is damaged", file=sys.stderr)
+    for kind, data in OLD_RE.findall(INVISIBLE_RE.sub("", text)):
+        try:
+            raw = base64.urlsafe_b64decode(data + "=" * (-len(data) % 4))
+            yield json.loads((zlib.decompress(raw, -15) if kind == "z" else raw).decode("utf-8"))
+        except (ValueError, zlib.error):
+            yield None
 
 
 def valid_picks(q: dict) -> set:
@@ -106,15 +159,12 @@ def main():
     docs, problems = {}, 0
     for m in a.messages:
         text = sys.stdin.read() if m == "-" else Path(m).read_text(encoding="utf-8")
-        found = CODE_RE.findall(re.sub(r"\s+", "", text))
+        found = list(find_codes(text))
         if not found:
             print(f"{m}: no code found", file=sys.stderr)
             problems += 1
-        for kind, data in found:
-            try:
-                doc_id, doc = clean(decode(kind, data), cfg)
-            except (ValueError, zlib.error) as e:
-                doc_id, doc = None, "is damaged or cut short"
+        for payload in found:
+            doc_id, doc = clean(payload, cfg) if payload is not None else (None, "is damaged or cut short")
             if doc_id is None:
                 print(f"{m}: skipped a code that {doc}", file=sys.stderr)
                 problems += 1
