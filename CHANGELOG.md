@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and versions follow the format `{major}.{minor}` ([...] parts appear only when non-zero).
 
+## [0.4] - 2026-10-15
+
+Install the skill as a plugin in Claude Code, Codex or Copilot CLI, or with npx skills in most other agents. Agents that can't publish to claude.ai now always make the single-file version.
+
+### Highlights
+
+- Install it as a plugin in Claude Code, Codex or Copilot CLI, with `npx skills` in most other agents, or from a clone with `scripts/install`.
+
+### Changed
+
+- **Breaking:** The skill moved to `skills/interactive-questionnaire/`. If you linked the whole clone into `~/.claude/skills`, remove that link and reinstall with one of the methods in the README.
+
+### Fixed
+
+- Agents that can't publish to claude.ai now always make the file version, even when you bring the questions ready-made, and open the preview in your browser when they have no built-in one.
+
 ## [0.3] - 2026-10-15
 
 The skill can now make a questionnaire as a single HTML file for people who don't use claude.ai: it opens in any browser, travels from person to person with everyone's answers inside, and Claude reads the answers back from a returned copy.

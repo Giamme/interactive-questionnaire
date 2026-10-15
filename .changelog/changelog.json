@@ -1,6 +1,43 @@
 {
   "versions": [
     {
+      "version": "0.4",
+      "date": "2026-10-15",
+      "summary": "Install the skill as a plugin in Claude Code, Codex or Copilot CLI, or with npx skills in most other agents. Agents that can't publish to claude.ai now always make the single-file version.",
+      "entries": [
+        {
+          "type": "added",
+          "text": "Install it as a plugin in Claude Code, Codex or Copilot CLI, with `npx skills` in most other agents, or from a clone with `scripts/install`.",
+          "breaking": false,
+          "audience": "user",
+          "highlight": true,
+          "commits": [
+            "6c307ad"
+          ]
+        },
+        {
+          "type": "changed",
+          "text": "The skill moved to `skills/interactive-questionnaire/`. If you linked the whole clone into `~/.claude/skills`, remove that link and reinstall with one of the methods in the README.",
+          "breaking": true,
+          "audience": "user",
+          "highlight": false,
+          "commits": [
+            "6c307ad"
+          ]
+        },
+        {
+          "type": "fixed",
+          "text": "Agents that can't publish to claude.ai now always make the file version, even when you bring the questions ready-made, and open the preview in your browser when they have no built-in one.",
+          "breaking": false,
+          "audience": "user",
+          "highlight": false,
+          "commits": [
+            "6c307ad"
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.3",
       "date": "2026-10-15",
       "summary": "The skill can now make a questionnaire as a single HTML file for people who don't use claude.ai: it opens in any browser, travels from person to person with everyone's answers inside, and Claude reads the answers back from a returned copy.",
