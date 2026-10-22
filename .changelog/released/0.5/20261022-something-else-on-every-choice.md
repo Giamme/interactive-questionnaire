@@ -1,5 +1,6 @@
 ---
 type: added
+highlight: true
 breaking: false
 audience: user
 commits: 

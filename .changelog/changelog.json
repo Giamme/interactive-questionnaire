@@ -1,6 +1,33 @@
 {
   "versions": [
     {
+      "version": "0.5",
+      "date": "2026-10-22",
+      "summary": "Multiple-choice questions now always offer «Something else» for an answer the options don't cover, and the skill writes questions with options instead of open ones whenever it can.",
+      "entries": [
+        {
+          "type": "added",
+          "text": "Every multiple-choice question now ends with «Something else», which asks for the answer in a line of text, so nobody has to pick «Not sure» just to write their own answer.",
+          "breaking": false,
+          "audience": "user",
+          "highlight": true,
+          "commits": [
+            "6b1dbe1"
+          ]
+        },
+        {
+          "type": "changed",
+          "text": "The skill now writes questions with options whenever it can name the likely answers, and keeps open questions for answers no list could anticipate. The build warns on each open question so you can check it's needed.",
+          "breaking": false,
+          "audience": "user",
+          "highlight": false,
+          "commits": [
+            "6b1dbe1"
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.4",
       "date": "2026-10-15",
       "summary": "Install the skill as a plugin in Claude Code, Codex or Copilot CLI, or with npx skills in most other agents. Agents that can't publish to claude.ai now always make the single-file version.",

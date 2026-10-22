@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and versions follow the format `{major}.{minor}` ([...] parts appear only when non-zero).
 
+## [0.5] - 2026-10-22
+
+Multiple-choice questions now always offer «Something else» for an answer the options don't cover, and the skill writes questions with options instead of open ones whenever it can.
+
+### Highlights
+
+- Every multiple-choice question now ends with «Something else», which asks for the answer in a line of text, so nobody has to pick «Not sure» just to write their own answer.
+
+### Changed
+
+- The skill now writes questions with options whenever it can name the likely answers, and keeps open questions for answers no list could anticipate. The build warns on each open question so you can check it's needed.
+
 ## [0.4] - 2026-10-15
 
 Install the skill as a plugin in Claude Code, Codex or Copilot CLI, or with npx skills in most other agents. Agents that can't publish to claude.ai now always make the single-file version.
