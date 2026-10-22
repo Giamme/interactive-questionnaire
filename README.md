@@ -9,7 +9,7 @@ The skill is built for decision rounds, where you have a recommendation and want
 - **Saves answers per person.** Each answer goes under the person's name in the page's own shared store, and everyone can see the team's answers under each question.
 - **Three kinds of question:**
   - `decision`: «Yes, as recommended / A different answer / Not sure»;
-  - `choice`: your own options, where any option can ask for an explanation;
+  - `choice`: your own options, plus «Something else» with a line for the answer, and «Not sure»;
   - `open`: a written answer.
 - **One or more languages,** with a switch at the top. Italian and English are built in, and another language needs its own UI strings.
 - **One question at a time:** answering closes the card into a one-line summary and scrolls to the next unanswered question.

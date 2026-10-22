@@ -96,6 +96,7 @@ def main():
             opts = [("yes", t("short_yes")), ("other", t("short_other")), ("unsure", t("short_unsure"))]
         elif kind == "choice":
             opts = [(o["key"], pick_text(o.get("short") or o["label"])) for o in q["options"]]
+            opts.append(("other", t("short_else")))
             if q.get("unsure", True):
                 opts.append(("unsure", t("short_unsure")))
         else:

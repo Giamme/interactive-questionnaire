@@ -57,21 +57,27 @@ All fields are optional. In any of them, `{n}` is replaced by the number of ques
 | `kind` | Answer buttons | Done when | Use it for |
 |---|---|---|---|
 | `decision` (default) | «Yes, as recommended» · «A different answer» · «Not sure» | a pick; «A different answer» also needs its line of text | Decisions where you have a recommendation. `rec` is required. |
-| `choice` | the question's own `options`, plus «Not sure» unless `"unsure": false` | a pick; an option with `"needsNote": true` also needs text | A fixed set of alternatives. `rec` is optional. |
-| `open` | a text box, plus a «Not sure» toggle | some text, or «Not sure» | Facts or opinions you can't predict. Leave out `rec`. |
+| `choice` | the question's own `options`, then «Something else», then «Not sure» unless `"unsure": false` | a pick; «Something else» and an option with `"needsNote": true` also need text | Any set of likely answers, complete or not. `rec` is optional. |
+| `open` | a text box, plus a «Not sure» toggle | some text, or «Not sure» | Only answers no list could anticipate: a name, a number, an anecdote. Leave out `rec`. `build.py` warns on each one. |
+
+Every `choice` question gets «Something else» (stored as `other`) after its own options: a button for an answer the options don't cover, which needs a line of text. So list the likely answers and don't write an «Other» option yourself. Use `"needsNote": true` only for a real option whose details matter, such as «No fixed target» with a line on why; `build.py` warns on each one so you can check it isn't a second «Something else».
 
 A `choice` question's options:
 
 ```json
 "options": [
+  {"key": "lisbon", "label": {"en": "Lisbon", "it": "Lisbona"}},
   {"key": "turin", "label": {"en": "Turin", "it": "Torino"}},
-  {"key": "elsewhere", "label": {"en": "Somewhere else", "it": "Altrove"}, "needsNote": true}
+  {"key": "none", "label": {"en": "No offsite this year", "it": "Niente offsite quest’anno"}, "needsNote": true}
 ]
 ```
+
+The page shows them followed by «Something else» and «Not sure».
 
 - **`key`**: letters, digits, `-` and `_`. `yes`, `other`, `unsure` and `answer` are reserved. Answers are stored under the key, so keep keys stable.
 - **`label`**: one text per language.
 - **`short`** (optional): a shorter label for summaries.
+- **`needsNote`** (optional): the option also needs a line of text, such as why.
 
 ## What is stored
 
@@ -91,7 +97,7 @@ The page keeps one document per person in its `responses` collection. The docume
 The values of `pick` depend on the kind:
 
 - `decision`: `yes`, `other` or `unsure`.
-- `choice`: an option `key`, or `unsure`.
+- `choice`: an option `key`, `other` («Something else», the text is in `note`) or `unsure`.
 - `open`: `answer` (the text is in `note`) or `unsure`.
 
 `note` is the comment, or the required text. Nothing in the document depends on the page's language.

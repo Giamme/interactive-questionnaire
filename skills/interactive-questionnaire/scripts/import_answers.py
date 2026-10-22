@@ -177,7 +177,7 @@ def valid_picks(q: dict) -> set:
         return {"yes", "other", "unsure"}
     if kind == "open":
         return {"answer", "unsure"}
-    keys = {o["key"] for o in q["options"]}
+    keys = {o["key"] for o in q["options"]} | {"other"}  # the page's own «Something else»
     return keys if q.get("unsure") is False else keys | {"unsure"}
 
 

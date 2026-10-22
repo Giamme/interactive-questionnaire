@@ -262,15 +262,16 @@ const UI = /*UI-START*/{
   "contextH": "Contesto", "howH": "Come rispondere",
   "how1": "Rispondi alle domande che conosci e lascia le altre a un collega. Anche «Non so» è una risposta utile, e un commento aiuta.",
   "howDecision": "Quando c’è una risposta consigliata, «Sì, come consigliato» la accetta e «Una risposta diversa» chiede una riga con l’alternativa.",
+  "howChoice": "Se nessuna opzione va bene, «Altro» chiede una riga con la tua risposta.",
   "howOpen": "Alle domande aperte rispondi scrivendo, poi passa oltre con «Chiudi e vai alla prossima».",
   "howFlow": "Quando scegli una risposta, la domanda si chiude e la pagina passa alla prossima senza risposta; «Modifica» la riapre, anche per aggiungere un commento. Le risposte si salvano mentre scrivi e puoi cambiarle quando vuoi.",
   "howNav": "I pulsanti in basso a destra portano all’inizio, alla prossima domanda senza risposta e all’ultima. L’elenco delle domande a sinistra (sugli schermi stretti, dal pulsante con le righe) segna con una spunta quelle a cui hai risposto: toccane una per andarci.",
   "fAll": "Tutte", "fMine": "Non risposte da me", "fOpen": "Non risposte da nessuno",
   "progress": "Tu: {m} di {n} · Con almeno una risposta: {a} di {n}", "answeredSoFar": "Hanno risposto:",
   "tagNext": "Prossima per te", "tagDone": "Risposta data", "rec": "Consigliata", "legend": "La tua risposta",
-  "pick_yes": "Sì, come consigliato", "pick_other": "Una risposta diversa", "pick_unsure": "Non so",
-  "short_yes": "sì", "short_other": "diversa", "short_unsure": "non so", "short_note": "commento",
-  "noteL": "Commento (facoltativo)", "noteNeed": "La tua risposta (obbligatoria se è diversa)", "noteNeedChoice": "Spiega la tua scelta (obbligatorio)", "noteAnswer": "La tua risposta",
+  "pick_yes": "Sì, come consigliato", "pick_other": "Una risposta diversa", "pick_unsure": "Non so", "pick_else": "Altro",
+  "short_yes": "sì", "short_other": "diversa", "short_unsure": "non so", "short_else": "altro", "short_note": "commento",
+  "noteL": "Commento (facoltativo)", "noteNeed": "La tua risposta (obbligatoria se è diversa)", "noteNeedChoice": "Spiega la tua scelta (obbligatorio)", "noteElse": "La tua risposta (obbligatoria)", "noteAnswer": "La tua risposta",
   "notePh": "Perché, o cosa invece", "notePhOpen": "Scrivi qui la tua risposta",
   "edit": "Modifica", "doneNext": "Chiudi e vai alla prossima", "sumYou": "La tua risposta: {pick}", "sumTeam": "{n} dal team",
   "fabAria": "Spostati nella pagina", "fabTop": "Torna all’inizio", "fabNext": "Prossima domanda senza risposta", "fabLast": "Ultima domanda",
@@ -318,15 +319,16 @@ const UI = /*UI-START*/{
   "contextH": "Context", "howH": "How to answer",
   "how1": "Answer the questions you know about and leave the rest for a colleague. «Not sure» is a useful answer too, and a comment helps.",
   "howDecision": "When there's a recommended answer, «Yes, as recommended» accepts it and «A different answer» needs a line saying what instead.",
+  "howChoice": "When none of the options fits, «Something else» needs a line with your answer.",
   "howOpen": "Open questions take a written answer; move on with «Close and go to the next».",
   "howFlow": "Choosing an answer closes the question and takes you to the next unanswered one; «Edit» opens it again, for example to add a comment. Your answers save as you go, and you can change them at any time.",
   "howNav": "The buttons at the bottom right go to the top, to the next unanswered question and to the last one. The list of questions on the left (on narrow screens, behind the button with the lines) ticks the ones you've answered; click one to go to it.",
   "fAll": "All", "fMine": "Not answered by me", "fOpen": "Not answered by anyone",
   "progress": "You: {m} of {n} · Answered by someone: {a} of {n}", "answeredSoFar": "Answered so far:",
   "tagNext": "Next for you", "tagDone": "Answered", "rec": "Recommended", "legend": "Your answer",
-  "pick_yes": "Yes, as recommended", "pick_other": "A different answer", "pick_unsure": "Not sure",
-  "short_yes": "yes", "short_other": "different", "short_unsure": "not sure", "short_note": "comment",
-  "noteL": "Comment (optional)", "noteNeed": "Your answer (required for a different answer)", "noteNeedChoice": "Explain your choice (required)", "noteAnswer": "Your answer",
+  "pick_yes": "Yes, as recommended", "pick_other": "A different answer", "pick_unsure": "Not sure", "pick_else": "Something else",
+  "short_yes": "yes", "short_other": "different", "short_unsure": "not sure", "short_else": "something else", "short_note": "comment",
+  "noteL": "Comment (optional)", "noteNeed": "Your answer (required for a different answer)", "noteNeedChoice": "Explain your choice (required)", "noteElse": "Your answer (required)", "noteAnswer": "Your answer",
   "notePh": "Why, or what instead", "notePhOpen": "Write your answer here",
   "edit": "Edit", "doneNext": "Close and go to the next", "sumYou": "Your answer: {pick}", "sumTeam": "{n} from the team",
   "fabAria": "Move around the page", "fabTop": "Back to top", "fabNext": "Next unanswered question", "fabLast": "Last question",
@@ -422,6 +424,8 @@ function optionsFor(q) {
   if (q.kind === "open") return [unsure];
   if (q.kind === "choice") {
     const own = q.options.map(o => ({key: o.key, label: label(o.label), short: label(o.short || o.label), needsNote: !!o.needsNote, cls: "opt"}));
+    // An answer the options don't cover gets its own button with a line of text, rather than «Not sure» and a comment.
+    own.push({key: "other", label: t("pick_else"), short: t("short_else"), needsNote: true, cls: "other"});
     return q.unsure === false ? own : own.concat([unsure]);
   }
   return [
@@ -454,7 +458,7 @@ function renderIntro() {
   // Context is the questionnaire author's own HTML (links to the material it is about).
   const ctx = ct("context"); $("#context").innerHTML = ctx; $("#context").hidden = $("#context-h").hidden = !ctx;
   const kinds = new Set(QS.map(q => q.kind));
-  $("#how").textContent = [ct("how"), t("how1"), kinds.has("decision") ? t("howDecision") : "", kinds.has("open") ? t("howOpen") : "", t("howFlow"), t("howNav")].filter(Boolean).join(" ");
+  $("#how").textContent = [ct("how"), t("how1"), kinds.has("decision") ? t("howDecision") : "", kinds.has("choice") ? t("howChoice") : "", kinds.has("open") ? t("howOpen") : "", t("howFlow"), t("howNav")].filter(Boolean).join(" ");
 }
 function applyLang() {
   document.documentElement.lang = S.lang;
@@ -877,7 +881,7 @@ function refreshCard(id, keepText) {
   const ta = note$(id); if (!keepText && document.activeElement !== ta) ta.value = a && a.note ? a.note : "";
   const o = a && a.pick ? optionOf(q, a.pick) : null;
   const writing = q.kind === "open" && !(a && a.pick === "unsure");
-  card.querySelector("[data-role=notelabel]").textContent = writing ? t("noteAnswer") : o && o.needsNote ? t(q.kind === "decision" ? "noteNeed" : "noteNeedChoice") : t("noteL");
+  card.querySelector("[data-role=notelabel]").textContent = writing ? t("noteAnswer") : o && o.needsNote ? t(q.kind === "decision" ? "noteNeed" : o.key === "other" ? "noteElse" : "noteNeedChoice") : t("noteL");
   ta.placeholder = writing ? t("notePhOpen") : t("notePh");
   ta.classList.toggle("need", !!(o && o.needsNote && !writing && !(a.note || "").trim()));
   const others = card.querySelector("[data-role=others]"); others.replaceChildren();

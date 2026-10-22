@@ -115,6 +115,9 @@ def check(cfg: dict, ui: dict) -> tuple[list[str], list[str]]:
         kind = q.get("kind") or ("choice" if "options" in q else "decision")
         if kind not in KINDS:
             err(f"{where}: kind must be one of {', '.join(sorted(KINDS))}")
+        elif kind == "open":
+            warnings.append(f"{where}: open question; if you can name likely answers, make it a choice "
+                            "(the page adds «Something else» for any other answer)")
         if groups:
             if q.get("group") not in group_keys:
                 err(f"{where}: group '{q.get('group')}' is not in groups")
@@ -149,6 +152,9 @@ def check(cfg: dict, ui: dict) -> tuple[list[str], list[str]]:
                     err(f"{where}.options[{j}]: key '{o['key']}' is reserved")
                 keys.append(o["key"])
                 check_label(o.get("label"), langs, f"{where}.options[{j}].label", err)
+                if o.get("needsNote"):
+                    warnings.append(f"{where}.options[{j}]: asks for text; if it means 'something else', drop it, "
+                                    "since the page adds «Something else» to every choice")
                 if "short" in o:
                     check_label(o["short"], langs, f"{where}.options[{j}].short", err)
             if len(set(keys)) != len(keys):

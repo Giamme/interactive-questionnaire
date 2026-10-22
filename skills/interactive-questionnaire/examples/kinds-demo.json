@@ -30,20 +30,19 @@
       "id": "Q2", "group": "plan", "kind": "choice",
       "options": [
         {"key": "lisbon", "label": {"en": "Lisbon"}},
-        {"key": "turin", "label": {"en": "Turin"}},
-        {"key": "elsewhere", "label": {"en": "Somewhere else"}, "needsNote": true}
+        {"key": "turin", "label": {"en": "Turin"}}
       ],
       "en": {
         "title": "Where should we go?",
-        "body": "All three fit the budget for 40 people in March.",
+        "body": "Both fit the budget for 40 people in March. Somewhere else works too if it does.",
         "rec": "Turin: one train for most of us, and the venue holds the date until the 30th."
       }
     },
     {
       "id": "Q3", "group": "you", "kind": "open",
       "en": {
-        "title": "One topic we must cover",
-        "body": "The thing you'd be disappointed to leave the offsite without discussing."
+        "title": "A moment worth repeating",
+        "body": "Something from last year's offsite that you'd want again, as it happened: a session, a dinner, a conversation."
       }
     }
   ]

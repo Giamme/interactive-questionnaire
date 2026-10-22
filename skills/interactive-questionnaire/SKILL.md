@@ -15,8 +15,10 @@ Here's what people get:
 - **Answers saved per person** in the page's own shared store, so they survive reloads and republishes. Everyone sees the team's answers under each question. Claude reads them back with ArtifactData.
 - **Three kinds of question:**
   - `decision`: a recommendation with «Yes, as recommended / A different answer / Not sure»;
-  - `choice`: your own options;
+  - `choice`: your own options, plus «Something else» (with a line for the answer) and «Not sure»;
   - `open`: a written answer.
+
+  Every question that offers buttons has one for an answer the others don't cover, and it asks for that answer in writing: «A different answer» on a `decision`, «Something else» on a `choice`. Nobody has to pick «Not sure» just to get a comment in.
 - **One language or several,** with a switch at the top. The first language is the default, and the template ships Italian and English.
 - **Moving through the page:**
   - Answering closes the card into a one-line summary with «Edit», and scrolls smoothly to the next unanswered question.
@@ -39,10 +41,11 @@ If the user already has the questions (a grilling round, a `to-questionnaire` dr
 ## 2. Write the questions
 
 - **One idea per question,** most important first, since people may answer only the top few. Group them by theme once there are more than about six.
+- **Give options, almost always.** Picking is faster than writing, and picks can be tallied. Before writing a question as `open`, try to name the three to six answers people are most likely to give, from the conversation, the material, or common practice; if you can, it's a `choice`. People whose answer isn't listed use «Something else», which the page adds to every `choice` and which asks for their answer in writing. Don't add your own «Other» option.
 - **Choose the kind:**
   - `decision` when you can recommend an answer;
-  - `choice` for a fixed set of alternatives;
-  - `open` for facts or opinions you can't predict.
+  - `choice` for a set of alternatives, even an incomplete one: list the likely answers and let «Something else» catch the rest;
+  - `open` only when no list of likely answers would make sense, such as a name, a number, a date or an anecdote only that person knows. `build.py` warns on each one, so check it's really needed.
 - **Give each question three parts:**
   - `title`: the question in a few words;
   - `body`: the context plus one concrete example that makes it answerable;
